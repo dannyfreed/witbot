@@ -1,0 +1,15 @@
+name: guru
+description: This gets the weather as a test and will soon query your google analytics account!
+config:
+  - name: OPENWEATHER_KEY
+    friendly_name: Open Weather API Key
+    info: Get this key from the Open Weather App you created on the web
+  - name: WIT_TOKEN
+    friendly_name: The Wit.ai API Token
+    info: This is the wit api token for your app on wit.ai
+  - name: SERVICE_ACCOUNT_EMAIL
+    friendly_name: Your Google Analytics Email
+    info: For now this MUST be a service account
+  - name: KEY_PEM
+    friendly_name: Your Google Analytics Key.Pem File
+    info: Hope this works
