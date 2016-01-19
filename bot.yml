@@ -7,6 +7,9 @@ config:
   - name: WIT_TOKEN
     friendly_name: The Wit.ai API Token
     info: This is the wit api token for your app on wit.ai
+  - name: GOOGLE_ANALYTICS_ID
+    friendly_name: Your Google Analytics ID
+    info: WIthin Google Analytics go to Admin > View Settings > View ID
   - name: SERVICE_ACCOUNT_EMAIL
     friendly_name: Your Google Analytics Email
     info: For now this MUST be a service account

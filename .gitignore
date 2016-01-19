@@ -1,5 +1,6 @@
 setenv.sh
 key.pem
+tcSlackbotKey.pem
 
 # Logs
 logs
