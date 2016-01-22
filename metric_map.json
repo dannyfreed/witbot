@@ -1,0 +1,26 @@
+
+
+"userMetrics":[
+    {"metric":"Users", "metricCode":"ga:users"}, 
+    {"metric":"New Users", "metricCode":"ga:newUsers"}, 
+    {"metric":"% New Sessions", "metricCode":"ga:percentNewSessions"}, 
+    {"metric":"Daily Active Users", "metricCode":"ga:1dayUsers"}, 
+    {"metric":"Weekly Active Users", "metricCode":"ga:7dayUsers"}, 
+    {"metric":"Monthly Active Users", "metricCode":"ga:30dayUsers"}, 
+    {"metric":"Number of Sessions per User", "metricCode":"ga:sessionsPerUser"}    
+]
+//metric dimensions
+
+ "sessionMetrics":[
+	{"metric":"Sessions", "metricCode":"ga:sessions"},
+	{"metric":"Bounces", "metricCode":"ga:bounces"},
+	{"metric":"Bounce Rate", "metricCode":"ga:bounceRate"},
+	{"metric":"Session Duration", "metricCode":"ga:sessionDuration"},
+	{"metric":"Avg. Session Duration", "metricCode":"ga:avgSessionDuration"},
+	{"metric":"Hits", "metricCode":"ga:hits"},
+]
+//session dimensions
+
+//etc...
+
+

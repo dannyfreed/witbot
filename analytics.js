@@ -5,6 +5,8 @@ var crypto = require('crypto')
 var request = require('request')
 var moment = require('moment');
 
+
+
 module.exports = function () {
   return new Analytics()
 }
@@ -58,10 +60,11 @@ function Analytics () {
                 'end-date': parsedEndDate,
                 'metrics': parsedMetric,
                 'segment': segment,
+                'output': 'datatable'
             }, function(err, result) {
                   if (err) {
                     console.log("Analytics file error: " + err);
-                    msg2 = "Oops, I don't seem to have the answer to that. Please try again" + err;
+                    msg2 = "Oops, I don't seem to have the answer to that. Please try again. Error: " + err;
                     fn(null, msg2);
                     return;
                     //return fn(err);
@@ -84,12 +87,19 @@ function Analytics () {
 
           }
           else{
+
+
+
+
+
             analytics.data.ga.get({ 
                 auth: authClient,
                 'ids': 'ga:112215144',
                 'start-date': parsedStartDate,
                 'end-date': parsedEndDate,
                 'metrics': parsedMetric,
+                'dimensions' : "ga:date",
+                'output': 'datatable'
             }, function(err, result) {
                   if (err) {
                     console.log("Analytics file error: " + err);
@@ -101,15 +111,84 @@ function Analytics () {
                   }
                   var totals = result.totalsForAllResults;
 
+                  //DRAW CHART//
+                  var cols = result.dataTable.cols;
+                  var rows = result.dataTable.rows;
+
+                  var xAxis = [];
+                  var yAxis = [];
+                  console.log('length = = ' + rows.length);
+                  for(var i = 0; i < rows.length; i++){
+                    //var date = rows[i]["c"][i]["v"];
+                    //console.log(date);
+                    var row = rows[i]["c"];
+                    var rawDate = row[0]["v"];
+                    var datapoint = row[1]["v"];
+
+                    var date = moment(rawDate).format("M/D");
+                    console.log("date == " + date);
+                    console.log("point == " + datapoint);
+                    
+                    xAxis.push(date);
+                    yAxis.push(datapoint);
+
+                  }
+                  //DEBUG THE dataTable object
+                  // rowszero = rows[0]["c"];
+                  // console.log(JSON.stringify(cols, null, 4));
+                  // console.log(JSON.stringify(rowszero, null, 4))
+
+
+
+                  //BUILD THE CHART!
+                   var quiche = require('quiche');
+                   
+                   var chart = quiche('line');
+                   chart.setTitle(metric);
+                   chart.addData(yAxis, metric, '008000');
+                   chart.addAxisLabels('x', xAxis);
+                   chart.setAutoScaling();
+                   chart.setTransparentBackground();
+
+                   var imageUrl = chart.getUrl(true); // First param controls http vs. https
+
+                   //END DRAWING OF SAID CHART!//
+
                   //http://stackoverflow.com/questions/24898151/json-response-from-google-analytics-api
-                  if (metric == "sessionDuration"){
-                    var data = result["totalsForAllResults"][parsedMetric]
-                    msg2 = moment.duration(data, 'milliseconds');
+
+                  msg2 = result["totalsForAllResults"][parsedMetric];
+
+                  if (metric == "avgSessionDuration"){
+                    //convert string to number
+                    msg2 = Number(msg2);
+
+                    //perform calculation seconds ==> minutes and round
+                    msg2 = msg2/60;
+
+                    //round number to 1 decimal
+                    msg2 = Math.round (msg2 * 10) / 10
+
+                    //convert back to string, add label
+                    msg2 = "The average session duration of your users during this time was around " + "*" + msg2.toString() + " minutes*";
+                    
                   }
-                  else{
-                    console.log(result)
-                    msg2 = result["totalsForAllResults"][parsedMetric];
+
+                  else if (metric == "bounceRate"){
+                    //convert string to number
+                    msg2 = Number(msg2);
+
+                    //round percentage
+                    msg2 = Math.round(msg2);
+
+                    //convert back to string, add label
+                    msg2 = "Your bounce rate during this time was " + "*" + msg2.toString() + "%*";
                   }
+
+                  else if (metric =="newUsers"){
+                    msg2 = "There were " + "*" + msg2 + " new users* during this time period";
+                  }
+
+                  msg2 = msg2 + "/n" + imageUrl;
 
                   fn(null, msg2)
             });
@@ -119,3 +198,6 @@ function Analytics () {
 
     }
 }
+
+
+
