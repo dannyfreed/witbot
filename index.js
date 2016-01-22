@@ -18,11 +18,18 @@ controller.spawn({
     throw new Error('Error connecting to slack: ', err)
   }
   console.log('Connected to slack')
+  
 })
+
+
+var Botkit = require('botkit');
 
 var witbot = Witbot(witToken)
 
-controller.hears('.*', 'direct_message,direct_mention,ambient', function (bot, message) {
+
+//TODO: ADD ONBOARDING BOT :)
+
+controller.hears('.*', 'direct_message,direct_mention', function (bot, message) {
   witbot.process(message.text, bot, message)
 })
 
@@ -115,5 +122,18 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 	    console.log('no error..')
   })
 })
+
+function onboard(bot, message){
+  bot.say(
+    {
+      text: 'Hello. Beep Beoop bop boop. I am a robot! :simplesmile:',
+      channel: '#general'
+    }
+  );
+};
+
+onboard();
+
+
 
 
