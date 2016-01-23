@@ -35,6 +35,8 @@ function Analytics () {
         var parsedEndDate = moment(endDate).format("YYYY-MM-DD")
         var parsedMetric = 'ga:' + metric
         var segment = segment;
+        var title = unCamelCase(metric);
+
         console.log(parsedMetric);
 
         var googleapis = require('googleapis'),
@@ -65,7 +67,7 @@ function Analytics () {
                   if (err) {
                     console.log("Analytics file error: " + err);
                     msg2 = "Oops, I don't seem to have the answer to that. Please try again. Error: " + err;
-                    fn(null, msg2);
+                    fn(null, msg2, imageUrl, title);
                     return;
                     //return fn(err);
                     //this doesn't work. all errors should be caught by this so that we never have the bot shut down.
@@ -82,7 +84,7 @@ function Analytics () {
                     msg2 = result["totalsForAllResults"][parsedMetric];
                   }
 
-                  fn(null, msg2)
+                  fn(null, msg2, imageUrl, title)
             });
 
           }
@@ -104,7 +106,7 @@ function Analytics () {
                   if (err) {
                     console.log("Analytics file error: " + err);
                     msg2 = "Oops, I don't seem to have the answer to that. Please try again" + err;
-                    fn(null, msg2);
+                    fn(null, msg2, imageUrl, title);
                     return;
                     //return fn(err);
                     //this doesn't work. all errors should be caught by this so that we never have the bot shut down.
@@ -144,9 +146,11 @@ function Analytics () {
                    var quiche = require('quiche');
                    
                    var chart = quiche('line');
-                   chart.setTitle(metric);
+                   //chart.setTitle(metric);
                    chart.addData(yAxis, metric, '008000');
                    chart.addAxisLabels('x', xAxis);
+                   chart.setWidth(540);
+                   chart.setHeight(540);
                    chart.setAutoScaling();
                    chart.setTransparentBackground();
 
@@ -188,15 +192,27 @@ function Analytics () {
                     msg2 = "There were " + "*" + msg2 + " new users* during this time period";
                   }
 
-                  msg2 = msg2 + "/n" + imageUrl;
+                  //msg2 = msg2 + "/n" + imageUrl;
 
-                  fn(null, msg2)
+                  fn(null, msg2, imageUrl, title)
             });
           }
 
       });
 
     }
+}
+
+
+
+function unCamelCase (str){
+    return str
+        // insert a space between lower & upper
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        // space before last upper in a sequence followed by lower
+        .replace(/\b([A-Z]+)([A-Z])([a-z])/, '$1 $2$3')
+        // uppercase the first character
+        .replace(/^./, function(str){ return str.toUpperCase(); })
 }
 
 

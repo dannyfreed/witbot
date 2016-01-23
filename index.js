@@ -119,15 +119,32 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 	
 
 
-  	analytics.get(metric, segment, startDate, endDate, function (error, msg2) {
+  	analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle) {
 	    if (error) {
 	      console.error("error?" + error)
 	      bot.reply(message, 'uh oh, there was a problem getting the analytics')
 	      return
 	    }
 	    // console.log(msg2)
-	    bot.reply(message, msg2)
-	    console.log('no error..')
+	    // bot.reply(message, msg2)
+
+
+	   	var chart  = [
+	        {
+	            "title": metricTitle,
+	            "image_url": chartURL,
+	            "color": "#764FA5",
+	        }
+	    ]
+
+	    bot.reply(message,{
+			//text: msg2,
+			attachments: chart,
+		},function(err,resp) {
+			console.log(err,resp);
+		});
+
+	    console.log('no errors..')
   })
 })
 
