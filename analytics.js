@@ -36,6 +36,7 @@ function Analytics () {
         var parsedMetric = 'ga:' + metric
         var segment = segment;
         var title = metric;
+        var sort = "-" + parsedMetric;
 
         var prettyStartDate = moment(parsedStartDate).format("M/D");
         var prettyEndDate = moment(parsedEndDate).format("M/D");
@@ -57,9 +58,21 @@ function Analytics () {
         authClient.authorize(function(err, tokens) {
           
           if (segment != null){
-            console.log("** segment is not equal to null ** ")
+            
             if(segment == "device"){
               segment = "ga:deviceCategory";
+            }
+            else if (segment == "operating system"){
+              segment = "ga:operatingSystem";
+            }
+            else if (segment == "browser"){
+              segment = "ga:browser";
+            }
+            else if (segment == "medium"){
+              segment = "ga:medium";
+            }
+            else if (segment =="country"){
+              segment = "ga:country"
             }
 
             analytics.data.ga.get({ 
@@ -69,6 +82,7 @@ function Analytics () {
                 'end-date': parsedEndDate,
                 'metrics': parsedMetric,
                 'dimensions' : segment,
+                'sort' : sort,
             }, function(err, result) {
                   if (err) {
                     console.log("Analytics file error: " + err);
@@ -143,7 +157,7 @@ function Analytics () {
                    
                    var chart = quiche('bar');
                    //chart.setTitle(metric);
-                   chart.addData(yAxis, metric, '008000');
+                   chart.addData(yAxis, metric, '764FA5');
                    chart.addAxisLabels('x', xAxis);
                    chart.setWidth(540);
                    chart.setHeight(540);

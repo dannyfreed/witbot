@@ -289,9 +289,8 @@ function getAnalytics(bot, message, metric, segment, startDate, endDate, chartBo
 
 		    }
 		   	
-		    ////JUST NOT SHOWING THE ATTACHMENT///
 		    bot.reply(message,{
-		    	text: "*" + title + " segmented by " + segmentCategory ":*",
+		    	text: "*" + title + " segmented by " + segmentCategory + ":*",
 				attachments: attachments,
 			},function(err,resp) {
 				console.log("rtm error: " + err,resp);
@@ -314,7 +313,7 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 		  {
 		    pattern: bot.utterances.yes,
 		    callback: function(response,convo) {
-		    	askSegment();
+		    	askSegment(metric);
 		  		
 		  		//do something else...( store response / make call)
 		      convo.next();
@@ -342,9 +341,9 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 	})
 
 
-	function askSegment(){
+	function askSegment(metric){
 		bot.startConversation(message,function(err,convo) {
-			convo.ask('Great! Do you want to segment by `device`, `os`, `browser`, or `country`?',[
+			convo.ask('Great! Do you want to segment by `device`, `operating system`, `browser`, `medium` or `country`?',[
 				{
 					pattern: 'device',
 					callback: function(response,convo) {
@@ -359,9 +358,10 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 					}
 				},
 				{
-					pattern: 'os',
+					pattern: 'operating system',
 					callback: function(response,convo) {
-						convo.say('you said ' + response.text);
+						segmentCategory = response.text;
+						getAnalytics(bot, message, metric, segmentCategory, startDate, endDate, false)
 						//do something else...( store response / make call)
 						convo.next();
 					}
@@ -369,16 +369,24 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 				{
 					pattern: 'browser',
 					callback: function(response,convo) {
-						convo.say('you said ' + response.text);
-						//do something else...( store response / make call)
+						segmentCategory = response.text;
+						getAnalytics(bot, message, metric, segmentCategory, startDate, endDate, false)
+						convo.next();
+					}
+				},
+				{
+					pattern: 'medium',
+					callback: function(response,convo) {
+						segmentCategory = response.text;
+						getAnalytics(bot, message, metric, segmentCategory, startDate, endDate, false)
 						convo.next();
 					}
 				},
 				{
 					pattern: 'country',
 					callback: function(response,convo) {
-						convo.say('you said ' + response.text);
-						//do something else...( store response / make call)
+						segmentCategory = response.text;
+						getAnalytics(bot, message, metric, segmentCategory, startDate, endDate, false)
 						convo.next();
 					}
 				}
