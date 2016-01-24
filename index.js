@@ -69,13 +69,11 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 	var segment = null;	
 	var metric = null;
 
-
-
 	//TODO: error handling for bad input data
 
 	//check if no date recognized
 	if (!outcome.entities.datetime || outcome.entities.datetime.length === 0) {
-		console.log(outcome.entities)
+		//console.log(outcome.entities)
 	    bot.reply(message, 'I\'d love to give you the answer. But I need you to specify a date!')
 	    return
 	}
@@ -98,7 +96,7 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 	}
 	//check if no metric recognized
 	if (!outcome.entities.ga_metric || outcome.entities.ga_metric.length === 0) {
-		console.log(outcome.entities);
+		//console.log(outcome.entities);
 		bot.reply(message, "Hmmm, I can't understand what you're trying to get. Can you try phrasing it differently? :simple_smile:");
 		return
 	}
@@ -115,37 +113,9 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 		var segment = outcome.entities.segment[0].value;
 	}
 	
-	console.log(segment);
-	
+	//console.log(segment);
 
-
-  	analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle) {
-	    if (error) {
-	      console.error("error?" + error)
-	      bot.reply(message, 'uh oh, there was a problem getting the analytics')
-	      return
-	    }
-	    // console.log(msg2)
-	    // bot.reply(message, msg2)
-
-
-	   	var chart  = [
-	        {
-	            "title": metricTitle,
-	            "image_url": chartURL,
-	            "color": "#764FA5",
-	        }
-	    ]
-
-	    bot.reply(message,{
-			//text: msg2,
-			attachments: chart,
-		},function(err,resp) {
-			console.log(err,resp);
-		});
-
-	    console.log('no errors..')
-  })
+	getAnalytics(bot, message, metric, segment, startDate, endDate, true);
 })
 
 
@@ -195,7 +165,7 @@ controller.hears(['list metrics'],['direct_message','direct_mention','mention','
 	    text: "Here are all the metrics I know how to calculate. Pair one of these with a `<period>` of time, and I'll get to crunching them numbers!",
 	    attachments: attachments,
 	  },function(err,resp) {
-	    console.log(err,resp);
+	    //console.log(err,resp);
 	  });
 
 });
@@ -203,18 +173,222 @@ controller.hears(['list metrics'],['direct_message','direct_mention','mention','
 
 
 
-// function onboard(){
-//   witbot.say(
-//     {
-//       text: 'Hello. Beep Beoop bop boop. I am a robot! :simplesmile:',
-//       channel: '#general'
-//     }
-//   );
-// };
+function unCamelCase (str){
+    return str
+        // insert a space between lower & upper
+        .replace(/([a-z])([A-Z])/g, '$1 $2')
+        // space before last upper in a sequence followed by lower
+        .replace(/\b([A-Z]+)([A-Z])([a-z])/, '$1 $2$3')
+        // uppercase the first character
+        .replace(/^./, function(str){ return str.toUpperCase(); })
+}
 
-// onboard();
+
+function getAnalytics(bot, message, metric, segment, startDate, endDate, chartBool){
+
+	if (chartBool == true){
+		analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle, startDate, endDate, prettyStartDate, prettyEndDate) {
+		    if (error) {
+		      console.error("error?" + error)
+		      bot.reply(message, 'uh oh, there was a problem getting the analytics')
+		      return
+		    }
+		    // console.log(msg2)
+		    // bot.reply(message, msg2)
+
+		    var title = unCamelCase(metricTitle)
+
+		   	var chart  = [
+		        {
+		            "title": title,
+		            "image_url": chartURL,
+		            "color": "#764FA5",
+		        }
+		    ]
+
+		    bot.reply(message,{
+				text: msg2,
+				attachments: chart,
+			},function(err,resp) {
+				//console.log(err,resp);
+			});
+
+		    //DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
+		    
+		    followUp(bot, message, title, startDate, endDate, metric, prettyStartDate, prettyEndDate);
+
+		    //find possible segments and list them out
+
+		    //ask user to select one
+
+		    //listen for response
+
+		    //make api call with metric + dimension + segment
+
+		    //return response
+			
+
+		    console.log('no errors..')
+	  	})	
+	}
+
+	//no chart
+	else{
+		analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle, startDate, endDate) {
+		    if (error) {
+		      console.error("error?" + error)
+		      bot.reply(message, 'uh oh, there was a problem getting the analytics')
+		      return
+		    }
+		    // console.log(msg2)
+		    // bot.reply(message, msg2)
+
+		    var title = unCamelCase(metricTitle)
+
+		    var fields = [];
+
+		    if(typeof msg2 == 'object'){
+
+		    	var attachments = [];
+				var attachment = {
+					color: '#CCC',
+					fields: [],
+					"mrkdwn_in": ["fields"],
+				};
+				var fieldValue = null;
+		    	for (var i = 0; i < msg2.length; i++){
+		    		// for (var j = 0; j < msg2[i].length; j++){
+		    		// 	row[0][0] --> label
+		    		// 	row[0][1] --> value
+
+		    			var label = msg2[i][0];
+		    			var value = msg2[i][1];
+		    			console.log(label + "-->" + value);
+		    			attachment.fields.push({
+		    				value: label,
+		    				short: true,
+		    			});
+		    			attachment.fields.push({
+		    				value: "`" + value + "`",
+		    				short: true,
+		    			})
+		    			
 
 
+		    			// console.log(row[j]);
+		    			// attachment.fields.push({
+		    			// 	label: 
+		    			// })
+						// console.log(typeof row[j]);
+		    // 		}
+		    		//console.log('after-loop');
+		    		
+		    	}
+		    	attachments.push(attachment);
+		    	
+
+		    }
+		   	
+		    ////JUST NOT SHOWING THE ATTACHMENT///
+		    bot.reply(message,{
+		    	text: "*" + title + " segmented by " + segmentCategory ":*",
+				attachments: attachments,
+			},function(err,resp) {
+				console.log("rtm error: " + err,resp);
+			});
+
+		    //DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
+		    
+
+		    console.log('no errors..')
+	  	})	
+	}
+
+}
+
+function followUp(bot, message, title, startDate, endDate, metric, prettyStartDate, prettyEndDate){
+	console.log(prettyStartDate + " - " + prettyEndDate);
+	// start a conversation to handle this response.
+	bot.startConversation(message,function(err,convo) {
+		convo.ask("Do you want me to segment *" + title + " from " + prettyStartDate + " - " + prettyEndDate + "*?",[
+		  {
+		    pattern: bot.utterances.yes,
+		    callback: function(response,convo) {
+		    	askSegment();
+		  		
+		  		//do something else...( store response / make call)
+		      convo.next();
+
+		    }
+		  },
+		  {
+		    pattern: bot.utterances.no,
+		    callback: function(response,convo) {
+		      convo.say('Ok. Perhaps later. :simple_smile:');
+		      // do nothing
+		      convo.next();
+		    }
+		  },
+		  {
+		    default: true,
+		    callback: function(response,convo) {
+		      // just repeat the question
+		      convo.say("Please say `YES` or `NO` :simple_smile: ");
+		      convo.repeat();
+		      convo.next();
+		    }
+		  }
+		]);
+	})
+
+
+	function askSegment(){
+		bot.startConversation(message,function(err,convo) {
+			convo.ask('Great! Do you want to segment by `device`, `os`, `browser`, or `country`?',[
+				{
+					pattern: 'device',
+					callback: function(response,convo) {
+						//convo.say('you said ' + response.text);
+
+						//CALL GAPI QUERY HERE WITH SEGMENT SELECTED AS RESPONSE.TEXT
+						segmentCategory = response.text;
+						getAnalytics(bot, message, metric, segmentCategory, startDate, endDate, false)
+
+						//do something else...( store response / make call)
+						convo.next();
+					}
+				},
+				{
+					pattern: 'os',
+					callback: function(response,convo) {
+						convo.say('you said ' + response.text);
+						//do something else...( store response / make call)
+						convo.next();
+					}
+				},
+				{
+					pattern: 'browser',
+					callback: function(response,convo) {
+						convo.say('you said ' + response.text);
+						//do something else...( store response / make call)
+						convo.next();
+					}
+				},
+				{
+					pattern: 'country',
+					callback: function(response,convo) {
+						convo.say('you said ' + response.text);
+						//do something else...( store response / make call)
+						convo.next();
+					}
+				}
+
+			]);
+		})
+	}
+
+
+}
 
 
 
