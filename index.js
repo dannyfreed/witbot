@@ -7,7 +7,6 @@ var slackToken = process.env.SLACK_TOKEN
 var witToken = process.env.WIT_TOKEN
 var openWeatherApiKey = process.env.OPENWEATHER_KEY
 
-
 ///TO DO : figure out dynamic way to get DB creds???
 var mysql = require('mysql');
 var connection = mysql.createConnection({
@@ -48,57 +47,85 @@ controller.hears('.*', 'direct_message,direct_mention', function (bot, message) 
 //   bot.reply(message, 'Hello to you as well!')
 // })
 
-
+controller.hears(['this is a test'],['direct_message','direct_mention','mention', 'ambient'],function(bot,message) {
+	bot.reply(message, "beep boop. testing 1 2 3. testing.");
+});
 //This function probably isnt needed, but may be good to check if multiple DB instances
-witbot.hears("database name", 0.5 function(bot, message, outcome)){
+controller.hears(['database name'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 	connection.connect();
-	bot.reply(message, connection['config']['database'])
-	connection.end(); 
-	return 
-}
+	var dbName = connection['config']['database'];
+	
+	console.log(dbName);
 
-witbot.hears("show tables", 0.5 function(bot, message, outcome)){
+	bot.reply(message, dbName);
+	connection.end(); 
+});
+
+controller.hears(['show tables'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 	connection.connect();
 	connection.query('show tables', function(err, rows, fields) {
-	 	bot.reply(message, rows)
+	 	
+
+	 	var tables = [];
+	 	//TODO:Make this dynamic with dbName
+	 	for(var i = 0; i < rows.length; i++){
+	 		var tableName = rows[i]["Tables_in_jamesBen"];
+	 		tables.push(tableName);
+	 	}
+	 	var tablesOutput = tables.toString();
+	 	bot.reply(message,tablesOutput);
 	});
 	connection.end(); // maybe dont close connection after each but I think its a
 	// good practice, since db can only allow 10 connections at a time 
-	return 
-}
+});
 
-witbot.hears("show schema", 0.5 function(bot, message, outcome)){
+controller.hears(['show schema'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 	connection.connect();
 	//TO DO: take the table name as a paramater prompt from previous function to ask 
 	//user which schema they would like to see?
 	connection.query('SHOW COLUMNS FROM data;', function(err, rows, fields) {
-		bot.reply(message, rows)
+		//rows is an object
+
+		//bot.reply takes a string
+		var columns = [];
+		for(var i = 0; i < rows.length; i++){
+			console.log(i);
+
+			//TODO: Make this dynamic? Do we need to or is it always called "Field"?
+			var field = rows[i]["Field"];
+			console.log(field)
+			columns.push(field);
+		}
+		var columnsOutput = columns.toString();
+		bot.reply(message, columnsOutput);
+
 	});
 	connection.end(); 
-	return 
-}
+});
 
 
-var weather = require('./weather')(openWeatherApiKey)
 
-witbot.hears('weather', 0.5, function (bot, message, outcome) {
-  console.log(outcome.entities.location)
-  if (!outcome.entities.location || outcome.entities.location.length === 0) {
-    bot.reply(message, 'I\'d love to give you the weather but for where?')
-    return
-  }
 
-  var location = outcome.entities.location[0].value
+// var weather = require('./weather')(openWeatherApiKey)
 
-  weather.get(location, function (error, msg) {
-    if (error) {
-      console.error(error)
-      bot.reply(message, 'uh oh, there was a problem getting the weather')
-      return
-    }
-    bot.reply(message, msg)
-  })
-})
+// witbot.hears('weather', 0.5, function (bot, message, outcome) {
+//   console.log(outcome.entities.location)
+//   if (!outcome.entities.location || outcome.entities.location.length === 0) {
+//     bot.reply(message, 'I\'d love to give you the weather but for where?')
+//     return
+//   }
+
+//   var location = outcome.entities.location[0].value
+
+//   weather.get(location, function (error, msg) {
+//     if (error) {
+//       console.error(error)
+//       bot.reply(message, 'uh oh, there was a problem getting the weather')
+//       return
+//     }
+//     bot.reply(message, msg)
+//   })
+// })
 
 
 var analytics = require('./analytics')();
