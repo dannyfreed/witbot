@@ -7,6 +7,17 @@ var slackToken = process.env.SLACK_TOKEN
 var witToken = process.env.WIT_TOKEN
 var openWeatherApiKey = process.env.OPENWEATHER_KEY
 
+
+///TO DO : figure out dynamic way to get DB creds???
+var mysql = require('mysql');
+var connection = mysql.createConnection({
+  host     : 'jamesben.cryprkoscuk1.us-west-2.rds.amazonaws.com',
+  user     : 'jamesBen',
+  password : 'jamesBen',
+  database : 'jamesBen'
+});
+
+
 var controller = Botkit.slackbot({
   debug: false
 })
@@ -37,6 +48,35 @@ controller.hears('.*', 'direct_message,direct_mention', function (bot, message) 
 //   bot.reply(message, 'Hello to you as well!')
 // })
 
+
+//This function probably isnt needed, but may be good to check if multiple DB instances
+witbot.hears("database name", 0.5 function(bot, message, outcome)){
+	connection.connect();
+	bot.reply(message, connection['config']['database'])
+	connection.end(); 
+	return 
+}
+
+witbot.hears("show tables", 0.5 function(bot, message, outcome)){
+	connection.connect();
+	connection.query('show tables', function(err, rows, fields) {
+	 	bot.reply(message, rows)
+	});
+	connection.end(); // maybe dont close connection after each but I think its a
+	// good practice, since db can only allow 10 connections at a time 
+	return 
+}
+
+witbot.hears("show schema", 0.5 function(bot, message, outcome)){
+	connection.connect();
+	//TO DO: take the table name as a paramater prompt from previous function to ask 
+	//user which schema they would like to see?
+	connection.query('SHOW COLUMNS FROM data;', function(err, rows, fields) {
+		bot.reply(message, rows)
+	});
+	connection.end(); 
+	return 
+}
 
 
 var weather = require('./weather')(openWeatherApiKey)
