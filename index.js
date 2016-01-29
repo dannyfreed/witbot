@@ -112,6 +112,23 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention','a
 	});
 });
 
+controller.hears(['query'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+	//TO DO : add error handling for invalid SQL
+	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
+			for(var i = 0; i < rows.length; i++){
+				var line = [];
+				var keys = Object.keys(rows[i]);
+				for(var ii = 0; ii < keys.length; ii++){
+					line.push(rows[i][keys[ii]]);
+				}
+				bot.reply(message, line.toString());
+			}
+	});
+
+});
+
+
+
 
 // var weather = require('./weather')(openWeatherApiKey)
 
