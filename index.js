@@ -10,100 +10,107 @@ var openWeatherApiKey = process.env.OPENWEATHER_KEY
 ///TO DO : figure out dynamic way to get DB creds???
 var mysql = require('mysql');
 var connection = mysql.createConnection({
-  host     : 'jamesben.cryprkoscuk1.us-west-2.rds.amazonaws.com',
-  user     : 'jamesBen',
-  password : 'jamesBen',
-  database : 'jamesBen'
+	host     : 'jamesben.cryprkoscuk1.us-west-2.rds.amazonaws.com',
+	user     : 'jamesBen',
+	password : 'jamesBen',
+	database : 'jamesBen'
 });
 
-
 var controller = Botkit.slackbot({
-  debug: false
+	debug: false
 })
 
 controller.spawn({
-  token: slackToken
+	token: slackToken
 }).startRTM(function (err, bot, payload) {
-  if (err) {
-    throw new Error('Error connecting to slack: ', err)
-  }
-  console.log('Connected to slack')
-  
-})
+	if (err) {
+		throw new Error('Error connecting to slack: ', err)
+	}
+	console.log('Connected to slack')
 
+})
 
 var Botkit = require('botkit');
 
 var witbot = Witbot(witToken)
 
-
 //TODO: ADD ONBOARDING BOT :)
 
 controller.hears('.*', 'direct_message,direct_mention', function (bot, message) {
-  witbot.process(message.text, bot, message)
+	witbot.process(message.text, bot, message)
 })
 
 // witbot.hears('hello', 0.5, function (bot, message, outcome) {
 //   bot.reply(message, 'Hello to you as well!')
 // })
 
+
 controller.hears(['this is a test'],['direct_message','direct_mention','mention', 'ambient'],function(bot,message) {
 	bot.reply(message, "beep boop. testing 1 2 3. testing.");
 });
-//This function probably isnt needed, but may be good to check if multiple DB instances
-controller.hears(['database name'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
-	connection.connect();
-	var dbName = connection['config']['database'];
-	
-	console.log(dbName);
 
+controller.hears(['database name'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+	var dbName = connection['config']['database'];  
 	bot.reply(message, dbName);
-	connection.end(); 
 });
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
-	connection.connect();
 	connection.query('show tables', function(err, rows, fields) {
-	 	
-
-	 	var tables = [];
-	 	//TODO:Make this dynamic with dbName
-	 	for(var i = 0; i < rows.length; i++){
-	 		var tableName = rows[i]["Tables_in_jamesBen"];
-	 		tables.push(tableName);
-	 	}
-	 	var tablesOutput = tables.toString();
-	 	bot.reply(message,tablesOutput);
+		var tables = [];
+		for(var i = 0; i < rows.length; i++){
+			var tableName = rows[i]["Tables_in_" + connection['config']['database']];
+			tables.push(tableName);
+		}
+		var tablesOutput = tables.toString();
+		bot.reply(message,tablesOutput);
 	});
-	connection.end(); // maybe dont close connection after each but I think its a
-	// good practice, since db can only allow 10 connections at a time 
 });
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
-	connection.connect();
-	//TO DO: take the table name as a paramater prompt from previous function to ask 
-	//user which schema they would like to see?
-	connection.query('SHOW COLUMNS FROM data;', function(err, rows, fields) {
-		//rows is an object
-
-		//bot.reply takes a string
-		var columns = [];
+	connection.query('show tables', function(err, rows, fields) {
+		var tables = [];
 		for(var i = 0; i < rows.length; i++){
-			console.log(i);
-
-			//TODO: Make this dynamic? Do we need to or is it always called "Field"?
-			var field = rows[i]["Field"];
-			console.log(field)
-			columns.push(field);
+			var tableName = rows[i]["Tables_in_" + connection['config']['database']];
+			tables.push(tableName);
 		}
-		var columnsOutput = columns.toString();
-		bot.reply(message, columnsOutput);
+		if(tables.length >= 2){
+			bot.startConversation(message,function(err,convo) {
+				convo.ask('Please pick a table: ' + tables.toString(),function(response,convo) {
+						if(tables.toString().indexOf(response.text) != -1){
+							connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
+								var columns = [];
+								for(var i = 0; i < rows.length; i++){
+									var field = rows[i]["Field"];
+									columns.push(field);
+								}
+								var columnsOutput = columns.toString();
+								bot.reply(message, columnsOutput);
+							});
+						}
+						else{
+							convo.stop();
+							bot.reply(message, "This is not a valid choice try again... (Type: <show schema>");
+						}
+					});
+			});
+		}
+		if(tables.length == 1){
+			connection.query('SHOW COLUMNS FROM ' + tables[0] +';', function(err, rows, fields) {
+				var columns = [];
+				for(var i = 0; i < rows.length; i++){
+					var field = rows[i]["Field"];
+					columns.push(field);
+				}
+				var columnsOutput = columns.toString();
+				bot.reply(message, columnsOutput);
+			});
 
+		}
+		if(tables.length == 0){
+			bot.reply(message, "You have no tables stored!");
+		}
 	});
-	connection.end(); 
 });
-
-
 
 
 // var weather = require('./weather')(openWeatherApiKey)
@@ -133,7 +140,7 @@ var analytics = require('./analytics')();
 witbot.hears('performance', 0.5, function (bot, message, outcome) {
 
 	//set defaults (before checks?)
-	var segment = null;	
+	var segment = null; 
 	var metric = null;
 
 	//TODO: error handling for bad input data
@@ -141,8 +148,8 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 	//check if no date recognized
 	if (!outcome.entities.datetime || outcome.entities.datetime.length === 0) {
 		//console.log(outcome.entities)
-	    bot.reply(message, 'I\'d love to give you the answer. But I need you to specify a date!')
-	    return
+		bot.reply(message, 'I\'d love to give you the answer. But I need you to specify a date!')
+		return
 	}
 	else{
 		//check if there is a range
@@ -187,12 +194,12 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 
 
 controller.on('channel_joined',function(bot,message) {
-    bot.say(
-      {
-        text: "Hi, I am Guru. Say `@guru help` to see what I can do",
-        channel: message.channel.id
-      }
-    );
+	bot.say(
+	{
+		text: "Hi, I am Guru. Say `@guru help` to see what I can do",
+		channel: message.channel.id
+	}
+	);
 });
 
 
@@ -202,173 +209,173 @@ controller.hears(['help'],['direct_message','direct_mention','mention','ambient'
 
   // start a conversation to handle this response.
   bot.startConversation(message,function(err,convo) {
-    convo.say("Ready to become an analytics guru? :nerd_face:  I can help!");
-    convo.say("I'm here to answer all your questions around data, analytics, metrics and insights. Ask me a question like `How many new users signed up last week?` or `How many daily active users over the past week?` and I will answer. You can also start by just mentioning a specific `<metric>` and `<period>`, and we can segment it out from there. :simple_smile: ");
-    convo.say("To see a full list of supported metrics, type `@guru: list metrics`");
+  	convo.say("Ready to become an analytics guru? :nerd_face:  I can help!");
+  	convo.say("I'm here to answer all your questions around data, analytics, metrics and insights. Ask me a question like `How many new users signed up last week?` or `How many daily active users over the past week?` and I will answer. You can also start by just mentioning a specific `<metric>` and `<period>`, and we can segment it out from there. :simple_smile: ");
+  	convo.say("To see a full list of supported metrics, type `@guru: list metrics`");
   })
 
 });
 
 controller.hears(['list metrics'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 
-	  var attachments  = [
-        {
-            "title": "Users",
-            "text": "`Users` `New Users` `% New Sessions` `Daily Active Users` `Weekly Active Users` `Monthly Active Users` `Number of Sessions per User`",
-            "mrkdwn_in": ["text"]
-        },
-        {
-            "title": "Sessions",
-            "text": "`Sessions` `Bounces` `Bounce Rate` `Session Duration` `Avg. Session Duration` `Hits`",
-            "mrkdwn_in": ["text"]
-        }
-    ]
+	var attachments  = [
+	{
+		"title": "Users",
+		"text": "`Users` `New Users` `% New Sessions` `Daily Active Users` `Weekly Active Users` `Monthly Active Users` `Number of Sessions per User`",
+		"mrkdwn_in": ["text"]
+	},
+	{
+		"title": "Sessions",
+		"text": "`Sessions` `Bounces` `Bounce Rate` `Session Duration` `Avg. Session Duration` `Hits`",
+		"mrkdwn_in": ["text"]
+	}
+	]
 
 
 
 	  //attachments.push(attachment);
 
 	  bot.reply(message,{
-	    text: "Here are all the metrics I know how to calculate. Pair one of these with a `<period>` of time, and I'll get to crunching them numbers!",
-	    attachments: attachments,
+	  	text: "Here are all the metrics I know how to calculate. Pair one of these with a `<period>` of time, and I'll get to crunching them numbers!",
+	  	attachments: attachments,
 	  },function(err,resp) {
-	    //console.log(err,resp);
-	  });
+		//console.log(err,resp);
+	});
 
-});
+	});
 
 
 
 
 function unCamelCase (str){
-    return str
-        // insert a space between lower & upper
-        .replace(/([a-z])([A-Z])/g, '$1 $2')
-        // space before last upper in a sequence followed by lower
-        .replace(/\b([A-Z]+)([A-Z])([a-z])/, '$1 $2$3')
-        // uppercase the first character
-        .replace(/^./, function(str){ return str.toUpperCase(); })
-}
+	return str
+		// insert a space between lower & upper
+		.replace(/([a-z])([A-Z])/g, '$1 $2')
+		// space before last upper in a sequence followed by lower
+		.replace(/\b([A-Z]+)([A-Z])([a-z])/, '$1 $2$3')
+		// uppercase the first character
+		.replace(/^./, function(str){ return str.toUpperCase(); })
+	}
 
 
-function getAnalytics(bot, message, metric, segment, startDate, endDate, chartBool){
+	function getAnalytics(bot, message, metric, segment, startDate, endDate, chartBool){
 
-	if (chartBool == true){
-		analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle, startDate, endDate, prettyStartDate, prettyEndDate) {
-		    if (error) {
-		      console.error("error?" + error)
-		      bot.reply(message, 'uh oh, there was a problem getting the analytics')
-		      return
-		    }
-		    // console.log(msg2)
-		    // bot.reply(message, msg2)
+		if (chartBool == true){
+			analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle, startDate, endDate, prettyStartDate, prettyEndDate) {
+				if (error) {
+					console.error("error?" + error)
+					bot.reply(message, 'uh oh, there was a problem getting the analytics')
+					return
+				}
+			// console.log(msg2)
+			// bot.reply(message, msg2)
 
-		    var title = unCamelCase(metricTitle)
+			var title = unCamelCase(metricTitle)
 
-		   	var chart  = [
-		        {
-		            "title": title,
-		            "image_url": chartURL,
-		            "color": "#764FA5",
-		        }
-		    ]
+			var chart  = [
+			{
+				"title": title,
+				"image_url": chartURL,
+				"color": "#764FA5",
+			}
+			]
 
-		    bot.reply(message,{
+			bot.reply(message,{
 				text: msg2,
 				attachments: chart,
 			},function(err,resp) {
 				//console.log(err,resp);
 			});
 
-		    //DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
-		    
-		    followUp(bot, message, title, startDate, endDate, metric, prettyStartDate, prettyEndDate);
+			//DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
+			
+			followUp(bot, message, title, startDate, endDate, metric, prettyStartDate, prettyEndDate);
 
-		    //find possible segments and list them out
+			//find possible segments and list them out
 
-		    //ask user to select one
+			//ask user to select one
 
-		    //listen for response
+			//listen for response
 
-		    //make api call with metric + dimension + segment
+			//make api call with metric + dimension + segment
 
-		    //return response
+			//return response
 			
 
-		    console.log('no errors..')
-	  	})	
-	}
+			console.log('no errors..')
+		})  
+		}
 
 	//no chart
 	else{
 		analytics.get(metric, segment, startDate, endDate, function (error, msg2, chartURL, metricTitle, startDate, endDate) {
-		    if (error) {
-		      console.error("error?" + error)
-		      bot.reply(message, 'uh oh, there was a problem getting the analytics')
-		      return
-		    }
-		    // console.log(msg2)
-		    // bot.reply(message, msg2)
+			if (error) {
+				console.error("error?" + error)
+				bot.reply(message, 'uh oh, there was a problem getting the analytics')
+				return
+			}
+			// console.log(msg2)
+			// bot.reply(message, msg2)
 
-		    var title = unCamelCase(metricTitle)
+			var title = unCamelCase(metricTitle)
 
-		    var fields = [];
+			var fields = [];
 
-		    if(typeof msg2 == 'object'){
+			if(typeof msg2 == 'object'){
 
-		    	var attachments = [];
+				var attachments = [];
 				var attachment = {
 					color: '#CCC',
 					fields: [],
 					"mrkdwn_in": ["fields"],
 				};
 				var fieldValue = null;
-		    	for (var i = 0; i < msg2.length; i++){
-		    		// for (var j = 0; j < msg2[i].length; j++){
-		    		// 	row[0][0] --> label
-		    		// 	row[0][1] --> value
+				for (var i = 0; i < msg2.length; i++){
+					// for (var j = 0; j < msg2[i].length; j++){
+					//  row[0][0] --> label
+					//  row[0][1] --> value
 
-		    			var label = msg2[i][0];
-		    			var value = msg2[i][1];
-		    			console.log(label + "-->" + value);
-		    			attachment.fields.push({
-		    				value: label,
-		    				short: true,
-		    			});
-		    			attachment.fields.push({
-		    				value: "`" + value + "`",
-		    				short: true,
-		    			})
-		    			
+					var label = msg2[i][0];
+					var value = msg2[i][1];
+					console.log(label + "-->" + value);
+					attachment.fields.push({
+						value: label,
+						short: true,
+					});
+					attachment.fields.push({
+						value: "`" + value + "`",
+						short: true,
+					})
 
 
-		    			// console.log(row[j]);
-		    			// attachment.fields.push({
-		    			// 	label: 
-		    			// })
+
+						// console.log(row[j]);
+						// attachment.fields.push({
+						//  label: 
+						// })
 						// console.log(typeof row[j]);
-		    // 		}
-		    		//console.log('after-loop');
-		    		
-		    	}
-		    	attachments.push(attachment);
-		    	
+			//      }
+					//console.log('after-loop');
+					
+				}
+				attachments.push(attachment);
+				
 
-		    }
-		   	
-		    bot.reply(message,{
-		    	text: "*" + title + " segmented by " + segmentCategory + ":*",
+			}
+			
+			bot.reply(message,{
+				text: "*" + title + " segmented by " + segmentCategory + ":*",
 				attachments: attachments,
 			},function(err,resp) {
 				console.log("rtm error: " + err,resp);
 			});
 
-		    //DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
-		    
+			//DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
+			
 
-		    console.log('no errors..')
-	  	})	
-	}
+			console.log('no errors..')
+		})  
+}
 
 }
 
@@ -377,33 +384,33 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 	// start a conversation to handle this response.
 	bot.startConversation(message,function(err,convo) {
 		convo.ask("Do you want me to segment *" + title + " from " + prettyStartDate + " - " + prettyEndDate + "*?",[
-		  {
-		    pattern: bot.utterances.yes,
-		    callback: function(response,convo) {
-		    	askSegment(metric);
-		  		
-		  		//do something else...( store response / make call)
-		      convo.next();
+		{
+			pattern: bot.utterances.yes,
+			callback: function(response,convo) {
+				askSegment(metric);
+				
+				//do something else...( store response / make call)
+				convo.next();
 
-		    }
-		  },
-		  {
-		    pattern: bot.utterances.no,
-		    callback: function(response,convo) {
-		      convo.say('Ok. Perhaps later. :simple_smile:');
-		      // do nothing
-		      convo.next();
-		    }
-		  },
-		  {
-		    default: true,
-		    callback: function(response,convo) {
-		      // just repeat the question
-		      convo.say("Please say `YES` or `NO` :simple_smile: ");
-		      convo.repeat();
-		      convo.next();
-		    }
-		  }
+			}
+		},
+		{
+			pattern: bot.utterances.no,
+			callback: function(response,convo) {
+				convo.say('Ok. Perhaps later. :simple_smile:');
+			  // do nothing
+			  convo.next();
+			}
+		},
+		{
+			default: true,
+			callback: function(response,convo) {
+			  // just repeat the question
+			  convo.say("Please say `YES` or `NO` :simple_smile: ");
+			  convo.repeat();
+			  convo.next();
+			}
+		}
 		]);
 	})
 
@@ -411,9 +418,9 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 	function askSegment(metric){
 		bot.startConversation(message,function(err,convo) {
 			convo.ask('Great! Do you want to segment by `device`, `operating system`, `browser`, `medium` or `country`?',[
-				{
-					pattern: 'device',
-					callback: function(response,convo) {
+			{
+				pattern: 'device',
+				callback: function(response,convo) {
 						//convo.say('you said ' + response.text);
 
 						//CALL GAPI QUERY HERE WITH SEGMENT SELECTED AS RESPONSE.TEXT
@@ -458,9 +465,9 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 					}
 				}
 
-			]);
-		})
-	}
+				]);
+})
+}
 
 
 }
