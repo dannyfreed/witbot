@@ -143,20 +143,23 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention','a
 controller.hears(['query'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
 		console.log("Query:", rows);
+		console.log(rows.length);
+
 		if (err || rows === undefined){
 			bot.reply(message, "error: invalid query");
 		}
 		else{
 			for(var i = 0; i < rows.length; i++){
 				var line = [];
+				console.log(i);
 				var keys = Object.keys(rows[i]);
 				for(var ii = 0; ii < keys.length; ii++){
 					line.push(rows[i][keys[ii]]);
 				}
 				bot.reply(message, line.toString());
-				return;
 			}
 		}
+		return;
 		
 	});
 
