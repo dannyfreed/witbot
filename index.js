@@ -56,65 +56,97 @@ controller.hears(['database name'],['direct_message','direct_mention','mention',
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
-		var tables = [];
-		for(var i = 0; i < rows.length; i++){
-			var tableName = rows[i]["Tables_in_" + connection['config']['database']];
-			tables.push(tableName);
+		console.log(rows);
+		if(err || rows === undefined){
+			bot.reply(message, "There was an error getting the database tables");
 		}
-		var tablesOutput = tables.toString();
-		bot.reply(message,tablesOutput);
+		else{
+			var tables = [];
+			for(var i = 0; i < rows.length; i++){
+				var tableName = rows[i]["Tables_in_" + connection['config']['database']];
+				tables.push(tableName);
+			}
+			var tablesOutput = tables.toString();
+			bot.reply(message,tablesOutput);
+		}
+		
 	});
 });
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
-		var tables = [];
-		for(var i = 0; i < rows.length; i++){
-			var tableName = rows[i]["Tables_in_" + connection['config']['database']];
-			tables.push(tableName);
+		if(err || rows === undefined){
+			bot.reply(message, "There was an error getting the schema");
 		}
-		if(tables.length >= 2){
-			bot.startConversation(message,function(err,convo) {
-				convo.ask('Please pick a table: ' + tables.toString(),function(response,convo) {
+		else{
+			var tables = [];
+			for(var i = 0; i < rows.length; i++){
+				var tableName = rows[i]["Tables_in_" + connection['config']['database']];
+				tables.push(tableName);
+			}
+			if(tables.length >= 2){
+				bot.startConversation(message,function(err,convo) {
+					convo.ask('Please pick a table: ' + tables.toString(),function(response,convo) {
 						if(tables.toString().indexOf(response.text) != -1){
 							connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
-								var columns = [];
-								for(var i = 0; i < rows.length; i++){
-									var field = rows[i]["Field"];
-									columns.push(field);
+								if(err || rows === undefined){
+									bot.reply(message, "There was an error getting the schema for table " + response.text);
 								}
-								var columnsOutput = columns.toString();
-								bot.reply(message, columnsOutput);
+								else{
+									var columns = [];
+									for(var i = 0; i < rows.length; i++){
+										var field = rows[i]["Field"];
+										columns.push(field);
+									}
+									var columnsOutput = columns.toString();
+									convo.stop();
+									bot.reply(message, columnsOutput);
+									return;
+								}
 							});
 						}
 						else{
 							convo.stop();
 							bot.reply(message, "This is not a valid choice try again... (Type: <show schema>");
+							return;
 						}
 					});
-			});
-		}
-		if(tables.length == 1){
-			connection.query('SHOW COLUMNS FROM ' + tables[0] +';', function(err, rows, fields) {
-				var columns = [];
-				for(var i = 0; i < rows.length; i++){
-					var field = rows[i]["Field"];
-					columns.push(field);
-				}
-				var columnsOutput = columns.toString();
-				bot.reply(message, columnsOutput);
-			});
+				});
+			}
+			if(tables.length == 1){
+				connection.query('SHOW COLUMNS FROM ' + tables[0] +';', function(err, rows, fields) {
+					if(err || rows == undefined){
+						bot.reply("There was an error getting the schema for table " + tables[0]);
+					}
+					else{
+						var columns = [];
+						for(var i = 0; i < rows.length; i++){
+							var field = rows[i]["Field"];
+							columns.push(field);
+						}
+						var columnsOutput = columns.toString();
+						bot.reply(message, columnsOutput);
+						return;
+					}
+					
+				});
 
-		}
-		if(tables.length == 0){
-			bot.reply(message, "You have no tables stored!");
+			}
+			if(tables.length == 0){
+				bot.reply(message, "You have no tables stored!");
+				return;
+			}
 		}
 	});
 });
 
 controller.hears(['query'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
-	//TO DO : add error handling for invalid SQL
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
+		console.log("Query:", rows);
+		if (err || rows === undefined){
+			bot.reply(message, "error: invalid query");
+		}
+		else{
 			for(var i = 0; i < rows.length; i++){
 				var line = [];
 				var keys = Object.keys(rows[i]);
@@ -122,7 +154,10 @@ controller.hears(['query'],['direct_message','direct_mention','mention','ambient
 					line.push(rows[i][keys[ii]]);
 				}
 				bot.reply(message, line.toString());
+				return;
 			}
+		}
+		
 	});
 
 });
