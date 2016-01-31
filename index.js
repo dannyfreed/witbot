@@ -2,6 +2,8 @@ var Botkit = require('botkit')
 var Witbot = require('witbot')
 var moment = require('moment');
 
+var spawn = require("child_process").spawn;
+
 
 var slackToken = process.env.SLACK_TOKEN
 var witToken = process.env.WIT_TOKEN
@@ -34,6 +36,9 @@ var Botkit = require('botkit');
 
 var witbot = Witbot(witToken)
 
+
+
+
 //TODO: ADD ONBOARDING BOT :)
 
 // controller.hears('.*', 'direct_message,direct_mention', function (bot, message) {
@@ -43,6 +48,14 @@ var witbot = Witbot(witToken)
 // witbot.hears('hello', 0.5, function (bot, message, outcome) {
 //   bot.reply(message, 'Hello to you as well!')
 // })
+
+
+controller.hears(['python test'],['direct_message','direct_mention','mention'],function(bot,message) {
+	var process = spawn('python',["hello.py"]);
+	process.stdout.on('data', function (data){
+		bot.reply(message, data.toString());
+});
+});
 
 
 
@@ -58,12 +71,27 @@ controller.hears('testing','direct_message','direct_mention',function(bot,messag
 
 controller.hears(['database name'],['direct_message','direct_mention','mention'],function(bot,message) {
 	var dbName = connection['config']['database'];  
-	bot.reply(message, dbName);
+		var attachments = [];
+		var attachment = {
+			color: '#CCC',
+			fields: [],
+			"mrkdwn_in": ["fields"],
+		};
+					attachment.fields.push({
+						value: "`" + dbName + "`",
+						short: true,
+					})
+				attachments.push(attachment);
+
+bot.reply(message,{
+				attachments: attachments,
+			},function(err,resp) {
+				console.log("rtm error: " + err,resp);
+			});
 });
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
-		console.log(rows);
 		if(err || rows === undefined){
 			bot.reply(message, "There was an error getting the database tables");
 		}
@@ -73,8 +101,24 @@ controller.hears(['show tables'],['direct_message','direct_mention','mention'],f
 				var tableName = rows[i]["Tables_in_" + connection['config']['database']];
 				tables.push(tableName);
 			}
-			var tablesOutput = tables.toString();
-			bot.reply(message,tablesOutput);
+
+			var attachments = [];
+		var attachment = {
+			color: '#CCC',
+			fields: [],
+			"mrkdwn_in": ["fields"],
+		};
+
+					attachment.fields.push({
+						value: "`" + tables.toString() + "`",
+						short: true,
+					})
+				attachments.push(attachment);
+			bot.reply(message,{
+				attachments: attachments,
+			},function(err,resp) {
+				console.log("rtm error: " + err,resp);
+			});
 		}
 		
 	});
@@ -150,7 +194,6 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
 		console.log("Query:", rows);
-		console.log(rows.length);
 
 		if (err || rows === undefined){
 			bot.reply(message, "error: invalid query");
@@ -158,7 +201,6 @@ controller.hears(['query'],['direct_message','direct_mention','mention'],functio
 		else{
 			for(var i = 0; i < rows.length; i++){
 				var line = [];
-				console.log(i);
 				var keys = Object.keys(rows[i]);
 				for(var ii = 0; ii < keys.length; ii++){
 					line.push(rows[i][keys[ii]]);
