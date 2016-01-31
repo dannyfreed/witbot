@@ -51,7 +51,7 @@ var witbot = Witbot(witToken)
 
 
 controller.hears(['python test'],['direct_message','direct_mention','mention'],function(bot,message) {
-	var process = spawn('python',["hello.py"]);
+	var process = spawn('python',["test.py"]);
 	process.stdout.on('data', function (data){
 		bot.reply(message, data.toString());
 });

@@ -9,3 +9,12 @@
 8. in terminal, type `npm install --save` this installs all the npm packages
 9. in terminal, type 'source devenv.sh'
 10. in terminal, type `npm start` this runs the command to run the index.js file
+
+
+QUEPY 
+===========
+1. 'pip install quepy'
+2. python 
+	2A. import nltk
+	2B. nltk.download()
+		Install all of the packages.... 
