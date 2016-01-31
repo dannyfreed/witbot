@@ -36,25 +36,32 @@ var witbot = Witbot(witToken)
 
 //TODO: ADD ONBOARDING BOT :)
 
-controller.hears('.*', 'direct_message,direct_mention', function (bot, message) {
-	witbot.process(message.text, bot, message)
-})
+// controller.hears('.*', 'direct_message,direct_mention', function (bot, message) {
+// 	witbot.process(message.text, bot, message)
+// })
 
 // witbot.hears('hello', 0.5, function (bot, message, outcome) {
 //   bot.reply(message, 'Hello to you as well!')
 // })
 
 
-controller.hears(['this is a test'],['direct_message','direct_mention','mention', 'ambient'],function(bot,message) {
+
+controller.hears('this is a test','direct_message','direct_mention',function(bot,message) {
 	bot.reply(message, "beep boop. testing 1 2 3. testing.");
 });
 
-controller.hears(['database name'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+controller.hears('testing','direct_message','direct_mention',function(bot,message) {
+	bot.reply(message, "beeeeeeeep boop. testing 1 2 3. testing.");
+});
+
+
+
+controller.hears(['database name'],['direct_message','direct_mention','mention'],function(bot,message) {
 	var dbName = connection['config']['database'];  
 	bot.reply(message, dbName);
 });
 
-controller.hears(['show tables'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
 		console.log(rows);
 		if(err || rows === undefined){
@@ -73,7 +80,7 @@ controller.hears(['show tables'],['direct_message','direct_mention','mention','a
 	});
 });
 
-controller.hears(['show schema'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
 			bot.reply(message, "There was an error getting the schema");
@@ -140,7 +147,7 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention','a
 	});
 });
 
-controller.hears(['query'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
 		console.log("Query:", rows);
 		console.log(rows.length);
@@ -260,7 +267,7 @@ controller.on('channel_joined',function(bot,message) {
 
 
 //ONLY WORKS WITH AMBIENT ON???
-controller.hears(['help'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+controller.hears(['help'],['direct_message','direct_mention','mention'],function(bot,message) {
 
   // start a conversation to handle this response.
   bot.startConversation(message,function(err,convo) {
@@ -271,7 +278,7 @@ controller.hears(['help'],['direct_message','direct_mention','mention','ambient'
 
 });
 
-controller.hears(['list metrics'],['direct_message','direct_mention','mention','ambient'],function(bot,message) {
+controller.hears(['list metrics'],['direct_message','direct_mention','mention'],function(bot,message) {
 
 	var attachments  = [
 	{
