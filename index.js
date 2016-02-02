@@ -37,16 +37,14 @@ var Botkit = require('botkit');
 
 
 //WIT.AI 
-
-
-
+var request = require('request');
 var wit = require('node-wit');
 var fs = require('fs');
 var witbot = Witbot(witToken);
-console.log(witToken);
-var ACCESS_TOKEN = ""; // bens token
+var ACCESS_TOKEN = "MSL3H5OLCFAD5ZB6CBUMWLFAQ6WOOZBX"; // bens token
 
-//Captures intents which can be intent for a word for SQL? Need to figure out wit more... 
+
+//Intent Lookup From Text
 wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err, res) {
     if (err) console.log("Error: ", err);
     console.log("Length outcomes: ", res['outcomes'].length);
@@ -56,28 +54,44 @@ wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err
 });
 
 
-//TODO: Create intent based on DB schema connected to to wit.ai 
+//Intent Creation - Based on HTTP Request 
+function createIntent() {
+  //TO DO : Read in schema and make intent words based on that?? Create intents for this
+ // https://wit.ai/docs/http/20141022#create-intent-expressions-link 
+ //Create new entities mapped to SQL keyword?  
+  var payload = {"name":"flight_request",
+       "doc":"detect flight request",
+       "expressions":[{
+          "body" : "fly from incheon to sfo"
+        }, {
+          "body" : "I want to fly from london to sfo"
+        },{
+          "body" : "need a flight from paris to tokyo"
+        }]};
 
-//TODO: Follow flow like : https://github.com/BeepBoopHQ/witbot to make semi SQL
+  request.post({
+  headers: {'content-type' : 'application/json', 'Authorization' : 'Bearer ' + ACCESS_TOKEN},
+  url:     'https://api.wit.ai/intents',
+  body:    payload,
+  json: true
+  }, function(error, response, body){
+    console.log(body)
+});
 
+}
 
+createIntent()
 
 //TODO: ADD ONBOARDING BOT :)
 
-// controller.hears('.*', 'direct_message,direct_mention', function (bot, message) {
-// 	witbot.process(message.text, bot, message)
-// })
-
-// witbot.hears('hello', 0.5, function (bot, message, outcome) {
-//   bot.reply(message, 'Hello to you as well!')
-// })
-
+/*
 controller.hears(['python test'],['direct_message','direct_mention','mention'],function(bot,message) {
 	var process = spawn('python',["test.py"]);
 	process.stdout.on('data', function (data){
 		bot.reply(message, data.toString());
 	});
 });
+*/
 
 controller.hears('this is a test','direct_message','direct_mention',function(bot,message) {
 	bot.reply(message, "beep boop. testing 1 2 3. testing.");
