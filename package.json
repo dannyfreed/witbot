@@ -21,11 +21,11 @@
     "botkit": "0.0.4",
     "googleanalytics": "^0.3.7",
     "googleapis": "^2.1.7",
-    "moment": "^2.11.1",
-    "q": "^1.4.1",
-    "request": "^2.67.0",
-    "witbot": "^1.0.1",
     "moment": "2.11.1",
-    "quiche": "0.0.10"
+    "node-wit": "^2.0.0",
+    "q": "^1.4.1",
+    "quiche": "0.0.10",
+    "request": "^2.67.0",
+    "witbot": "^1.1.0"
   }
 }

@@ -34,8 +34,31 @@ controller.spawn({
 
 var Botkit = require('botkit');
 
-var witbot = Witbot(witToken)
 
+
+//WIT.AI 
+
+
+
+var wit = require('node-wit');
+var fs = require('fs');
+var witbot = Witbot(witToken);
+console.log(witToken);
+var ACCESS_TOKEN = ""; // bens token
+
+//Captures intents which can be intent for a word for SQL? Need to figure out wit more... 
+wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err, res) {
+    if (err) console.log("Error: ", err);
+    console.log("Length outcomes: ", res['outcomes'].length);
+    var intent = res['outcomes'][0]['intent']; 
+
+    console.log(JSON.stringify(res, null, " "));
+});
+
+
+//TODO: Create intent based on DB schema connected to to wit.ai 
+
+//TODO: Follow flow like : https://github.com/BeepBoopHQ/witbot to make semi SQL
 
 
 
@@ -49,15 +72,12 @@ var witbot = Witbot(witToken)
 //   bot.reply(message, 'Hello to you as well!')
 // })
 
-
 controller.hears(['python test'],['direct_message','direct_mention','mention'],function(bot,message) {
 	var process = spawn('python',["test.py"]);
 	process.stdout.on('data', function (data){
 		bot.reply(message, data.toString());
+	});
 });
-});
-
-
 
 controller.hears('this is a test','direct_message','direct_mention',function(bot,message) {
 	bot.reply(message, "beep boop. testing 1 2 3. testing.");
@@ -66,8 +86,6 @@ controller.hears('this is a test','direct_message','direct_mention',function(bot
 controller.hears('testing','direct_message','direct_mention',function(bot,message) {
 	bot.reply(message, "beeeeeeeep boop. testing 1 2 3. testing.");
 });
-
-
 
 controller.hears(['database name'],['direct_message','direct_mention','mention'],function(bot,message) {
 	var dbName = connection['config']['database'];  
@@ -93,6 +111,7 @@ bot.reply(message,{
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
+			console.log(err);
 			bot.reply(message, "There was an error getting the database tables");
 		}
 		else{
@@ -127,6 +146,7 @@ controller.hears(['show tables'],['direct_message','direct_mention','mention'],f
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
+			console.log(err);
 			bot.reply(message, "There was an error getting the schema");
 		}
 		else{
@@ -167,6 +187,7 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 			if(tables.length == 1){
 				connection.query('SHOW COLUMNS FROM ' + tables[0] +';', function(err, rows, fields) {
 					if(err || rows == undefined){
+						console.log(err);
 						bot.reply("There was an error getting the schema for table " + tables[0]);
 					}
 					else{
@@ -191,7 +212,7 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 	});
 });
 
-controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
+controller.hears(['SQL query', 'query'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
 		console.log("Query:", rows);
 
@@ -209,35 +230,8 @@ controller.hears(['query'],['direct_message','direct_mention','mention'],functio
 			}
 		}
 		return;
-		
 	});
-
 });
-
-
-
-
-// var weather = require('./weather')(openWeatherApiKey)
-
-// witbot.hears('weather', 0.5, function (bot, message, outcome) {
-//   console.log(outcome.entities.location)
-//   if (!outcome.entities.location || outcome.entities.location.length === 0) {
-//     bot.reply(message, 'I\'d love to give you the weather but for where?')
-//     return
-//   }
-
-//   var location = outcome.entities.location[0].value
-
-//   weather.get(location, function (error, msg) {
-//     if (error) {
-//       console.error(error)
-//       bot.reply(message, 'uh oh, there was a problem getting the weather')
-//       return
-//     }
-//     bot.reply(message, msg)
-//   })
-// })
-
 
 var analytics = require('./analytics')();
 
