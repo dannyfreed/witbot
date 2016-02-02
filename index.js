@@ -1,6 +1,8 @@
 var Botkit = require('botkit')
 var Witbot = require('witbot')
 var moment = require('moment');
+var excelbuilder = require('msexcel-builder');
+
 
 var spawn = require("child_process").spawn;
 
@@ -34,17 +36,15 @@ controller.spawn({
 
 var Botkit = require('botkit');
 
-
-
 //WIT.AI 
+
 var request = require('request');
 var wit = require('node-wit');
 var fs = require('fs');
 var witbot = Witbot(witToken);
-var ACCESS_TOKEN = "MSL3H5OLCFAD5ZB6CBUMWLFAQ6WOOZBX"; // bens token
+var ACCESS_TOKEN = "MSL3H5OLCFAD5ZB6CBUMWLFAQ6WOOZBX"; 
 
-
-//Intent Lookup From Text
+/*
 wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err, res) {
     if (err) console.log("Error: ", err);
     console.log("Length outcomes: ", res['outcomes'].length);
@@ -52,35 +52,32 @@ wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err
 
     console.log(JSON.stringify(res, null, " "));
 });
+*/
 
-
-//Intent Creation - Based on HTTP Request 
-function createIntent() {
-  //TO DO : Read in schema and make intent words based on that?? Create intents for this
- // https://wit.ai/docs/http/20141022#create-intent-expressions-link 
- //Create new entities mapped to SQL keyword?  
+function createIntent() { 
   var payload = {"name":"flight_request",
-       "doc":"detect flight request",
-       "expressions":[{
-          "body" : "fly from incheon to sfo"
-        }, {
-          "body" : "I want to fly from london to sfo"
-        },{
-          "body" : "need a flight from paris to tokyo"
-        }]};
+  "doc":"detect flight request",
+  "expressions":[{
+    "body" : "fly from incheon to sfo"
+  }, {
+    "body" : "I want to fly from london to sfo"
+  },{
+    "body" : "need a flight from paris to tokyo"
+  }]};
 
   request.post({
-  headers: {'content-type' : 'application/json', 'Authorization' : 'Bearer ' + ACCESS_TOKEN},
-  url:     'https://api.wit.ai/intents',
-  body:    payload,
-  json: true
+    headers: {'content-type' : 'application/json', 'Authorization' : 'Bearer ' + ACCESS_TOKEN},
+    url:     'https://api.wit.ai/intents',
+    body:    payload,
+    json: true
   }, function(error, response, body){
     console.log(body)
-});
+  });
 
 }
 
 createIntent()
+
 
 //TODO: ADD ONBOARDING BOT :)
 
@@ -93,6 +90,7 @@ controller.hears(['python test'],['direct_message','direct_mention','mention'],f
 });
 */
 
+/*
 controller.hears('this is a test','direct_message','direct_mention',function(bot,message) {
 	bot.reply(message, "beep boop. testing 1 2 3. testing.");
 });
@@ -100,26 +98,52 @@ controller.hears('this is a test','direct_message','direct_mention',function(bot
 controller.hears('testing','direct_message','direct_mention',function(bot,message) {
 	bot.reply(message, "beeeeeeeep boop. testing 1 2 3. testing.");
 });
+*/
+
+
+function createExcelAttachment(data, nameWorkbook){
+  if(nameWorkbook.indexOf(".csv") == -1){
+    nameWorkbook = nameWorkbook + ".csv"
+  }
+  var workbook = excelbuilder.createWorkbook('./', nameWorkbook)
+  var rows = data.length;
+  var cols = data[0].length;
+  var sheet1 = workbook.createSheet('sheet1', cols, rows);  
+  for(var i = 0; i < rows; i++){
+    for(var j=0; j < cols; j++){
+      if(data[i][j] != undefined){
+        sheet1.set(j+1, i+1, data[i][j]);
+      }
+    }
+  }
+  workbook.save(function(ok){
+    if (!ok) 
+      workbook.cancel();
+    else
+      console.log('Your workbook created');
+  });
+}
+
 
 controller.hears(['database name'],['direct_message','direct_mention','mention'],function(bot,message) {
 	var dbName = connection['config']['database'];  
-		var attachments = [];
-		var attachment = {
-			color: '#CCC',
-			fields: [],
-			"mrkdwn_in": ["fields"],
-		};
-					attachment.fields.push({
-						value: "`" + dbName + "`",
-						short: true,
-					})
-				attachments.push(attachment);
+  var attachments = [];
+  var attachment = {
+   color: '#CCC',
+   fields: [],
+   "mrkdwn_in": ["fields"],
+ };
+ attachment.fields.push({
+  value: "`" + dbName + "`",
+  short: true,
+})
+ attachments.push(attachment);
 
-bot.reply(message,{
-				attachments: attachments,
-			},function(err,resp) {
-				console.log("rtm error: " + err,resp);
-			});
+ bot.reply(message,{
+  attachments: attachments,
+},function(err,resp) {
+  console.log("rtm error: " + err,resp);
+});
 });
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
@@ -136,25 +160,25 @@ controller.hears(['show tables'],['direct_message','direct_mention','mention'],f
 			}
 
 			var attachments = [];
-		var attachment = {
-			color: '#CCC',
-			fields: [],
-			"mrkdwn_in": ["fields"],
-		};
+      var attachment = {
+       color: '#CCC',
+       fields: [],
+       "mrkdwn_in": ["fields"],
+     };
 
-					attachment.fields.push({
-						value: "`" + tables.toString() + "`",
-						short: true,
-					})
-				attachments.push(attachment);
-			bot.reply(message,{
-				attachments: attachments,
-			},function(err,resp) {
-				console.log("rtm error: " + err,resp);
-			});
-		}
-		
-	});
+     attachment.fields.push({
+      value: "`" + tables.toString() + "`",
+      short: true,
+    })
+     attachments.push(attachment);
+     bot.reply(message,{
+      attachments: attachments,
+    },function(err,resp) {
+      console.log("rtm error: " + err,resp);
+    });
+   }
+
+ });
 });
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
@@ -193,9 +217,9 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 						else{
 							convo.stop();
 							bot.reply(message, "This is not a valid choice try again... (Type: <show schema>");
-							return;
-						}
-					});
+               return;
+             }
+           });
 				});
 			}
 			if(tables.length == 1){
@@ -226,25 +250,37 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 	});
 });
 
-controller.hears(['SQL query', 'query'],['direct_message','direct_mention','mention'],function(bot,message) {
+controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
 		console.log("Query:", rows);
-
-		if (err || rows === undefined){
-			bot.reply(message, "error: invalid query");
-		}
-		else{
-			for(var i = 0; i < rows.length; i++){
-				var line = [];
-				var keys = Object.keys(rows[i]);
-				for(var ii = 0; ii < keys.length; ii++){
-					line.push(rows[i][keys[ii]]);
-				}
-				bot.reply(message, line.toString());
-			}
-		}
-		return;
-	});
+    var data = [];
+    if (err || rows === undefined){
+     bot.reply(message, "error: invalid query");
+   }
+   else{
+     for(var i = 0; i < rows.length; i++){
+      var line = [];
+      var keys = Object.keys(rows[i]);
+      for(var ii = 0; ii < keys.length; ii++){
+       line.push(rows[i][keys[ii]]);
+     }
+     data.push(line);
+     bot.reply(message, line.toString());
+   }
+ }
+ bot.startConversation(message,function(err,convo) {
+  convo.ask('Would you like to save this data to a CSV?',function(response,convo) {
+    if(response.text.toUpperCase() == "YES"){
+      convo.next();
+      convo.ask("What would you like to name the file?", function(response, convo){
+        createExcelAttachment(data, response.text);
+        convo.stop();
+      });
+    }
+  });
+});
+ return;
+});
 });
 
 var analytics = require('./analytics')();
@@ -580,8 +616,6 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 				]);
 })
 }
-
-
 }
 
 
