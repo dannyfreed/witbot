@@ -8,6 +8,7 @@ var Botkit = require('botkit');
 
 var slackToken = process.env.SLACK_TOKEN
 var witToken = process.env.WIT_TOKEN
+var witbot = Witbot(witToken);
 
 var connection = mysql.createConnection({
 	host     : process.env.HOSTS,
@@ -221,22 +222,38 @@ controller.hears(['query'],['direct_message','direct_mention','mention'],functio
 				bot.reply(message, line.toString());
 			}
 
-			bot.startConversation(message,function(err,convo) {
-				convo.ask('Would you like to save this data to a CSV?',function(response,convo) {
-					if(response.text.toUpperCase() == "YES"){
-						convo.next();
-						convo.ask("What would you like to name the file?", function(response, convo){
-							createExcelAttachment(data, response.text);
-						});
-						convo.stop();
-					}
-				});
-			});
+
+  bot.startConversation(message,function(err,convo) {
+    convo.ask('What would you like to save this query to a CSV?',[
+      {
+        pattern: bot.utterances.yes,
+        callback: function(response,convo) {
+        	convo.next();
+        	convo.ask("What would you like the name the file?", function(response, convo){
+        		console.log(response.text);
+        		createExcelAttachment(data, response.text);
+        		//TO DO SEND BACK A MESSAGE WITH THE DATA FILE AS ATTACHMENT 
+        		convo.stop();
+        	})
+        }
+      },
+      {
+        pattern: bot.utterances.no,
+        callback: function(response,convo) {
+          convo.say('Perhaps later.');
+          convo.stop();
+        }
+      }
+    ]);
+  })
 		}
 		return;
 	});
 	}
 });
+
+
+
 
 var analytics = require('./analytics')();
 
