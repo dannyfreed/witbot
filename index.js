@@ -2,22 +2,18 @@ var Botkit = require('botkit')
 var Witbot = require('witbot')
 var moment = require('moment');
 var excelbuilder = require('msexcel-builder');
-
-
-var spawn = require("child_process").spawn;
+var mysql = require('mysql');
+var Botkit = require('botkit');
 
 
 var slackToken = process.env.SLACK_TOKEN
 var witToken = process.env.WIT_TOKEN
-var openWeatherApiKey = process.env.OPENWEATHER_KEY
 
-///TO DO : figure out dynamic way to get DB creds???
-var mysql = require('mysql');
 var connection = mysql.createConnection({
-	host     : 'jamesben.cryprkoscuk1.us-west-2.rds.amazonaws.com',
-	user     : 'jamesBen',
-	password : 'jamesBen',
-	database : 'jamesBen'
+	host     : process.env.HOSTS,
+	user     : process.env.USER,
+	password : process.env.PASSWORD,
+	database : process.env.DATABASE
 });
 
 var controller = Botkit.slackbot({
@@ -31,18 +27,15 @@ controller.spawn({
 		throw new Error('Error connecting to slack: ', err)
 	}
 	console.log('Connected to slack')
-
 })
-
-var Botkit = require('botkit');
 
 //WIT.AI 
 
-var request = require('request');
-var wit = require('node-wit');
-var fs = require('fs');
-var witbot = Witbot(witToken);
-var ACCESS_TOKEN = "MSL3H5OLCFAD5ZB6CBUMWLFAQ6WOOZBX"; 
+// var request = require('request');
+// var wit = require('node-wit');
+// var fs = require('fs');
+// var witbot = Witbot(witToken);
+// var ACCESS_TOKEN = "MSL3H5OLCFAD5ZB6CBUMWLFAQ6WOOZBX"; 
 
 /*
 wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err, res) {
@@ -52,105 +45,82 @@ wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err
 
     console.log(JSON.stringify(res, null, " "));
 });
-*/
+
 
 function createIntent() { 
-  var payload = {"name":"flight_request",
-  "doc":"detect flight request",
-  "expressions":[{
-    "body" : "fly from incheon to sfo"
-  }, {
-    "body" : "I want to fly from london to sfo"
-  },{
-    "body" : "need a flight from paris to tokyo"
-  }]};
+	var payload = {"name":"flight_request",
+	"doc":"detect flight request",
+	"expressions":[{
+		"body" : "fly from incheon to sfo"
+	}, {
+		"body" : "I want to fly from london to sfo"
+	},{
+		"body" : "need a flight from paris to tokyo"
+	}]};
 
-  request.post({
-    headers: {'content-type' : 'application/json', 'Authorization' : 'Bearer ' + ACCESS_TOKEN},
-    url:     'https://api.wit.ai/intents',
-    body:    payload,
-    json: true
-  }, function(error, response, body){
-    console.log(body)
-  });
+	request.post({
+		headers: {'content-type' : 'application/json', 'Authorization' : 'Bearer ' + ACCESS_TOKEN},
+		url:     'https://api.wit.ai/intents',
+		body:    payload,
+		json: true
+	}, function(error, response, body){
+		console.log(body)
+	});
 
 }
-
 createIntent()
-
+*/
 
 //TODO: ADD ONBOARDING BOT :)
 
-/*
-controller.hears(['python test'],['direct_message','direct_mention','mention'],function(bot,message) {
-	var process = spawn('python',["test.py"]);
-	process.stdout.on('data', function (data){
-		bot.reply(message, data.toString());
-	});
-});
-*/
-
-/*
-controller.hears('this is a test','direct_message','direct_mention',function(bot,message) {
-	bot.reply(message, "beep boop. testing 1 2 3. testing.");
-});
-
-controller.hears('testing','direct_message','direct_mention',function(bot,message) {
-	bot.reply(message, "beeeeeeeep boop. testing 1 2 3. testing.");
-});
-*/
-
-
 function createExcelAttachment(data, nameWorkbook){
-  if(nameWorkbook.indexOf(".csv") == -1){
-    nameWorkbook = nameWorkbook + ".csv"
-  }
-  var workbook = excelbuilder.createWorkbook('./', nameWorkbook)
-  var rows = data.length;
-  var cols = data[0].length;
-  var sheet1 = workbook.createSheet('sheet1', cols, rows);  
-  for(var i = 0; i < rows; i++){
-    for(var j=0; j < cols; j++){
-      if(data[i][j] != undefined){
-        sheet1.set(j+1, i+1, data[i][j]);
-      }
-    }
-  }
-  workbook.save(function(ok){
-    if (!ok) 
-      workbook.cancel();
-    else
-      console.log('Your workbook created');
-  });
+	if(nameWorkbook.indexOf(".csv") == -1){
+		nameWorkbook = nameWorkbook + ".csv"
+	}
+	var workbook = excelbuilder.createWorkbook('./', nameWorkbook)
+	var rows = data.length;
+	var cols = data[0].length;
+	var sheet1 = workbook.createSheet('sheet1', cols, rows);  
+	for(var i = 0; i < rows; i++){
+		for(var j=0; j < cols; j++){
+			if(data[i][j] != undefined){
+				sheet1.set(j+1, i+1, data[i][j]);
+			}
+		}
+	}
+	workbook.save(function(ok){
+		if (!ok) 
+			workbook.cancel();
+		else
+			console.log('Your workbook created');
+	});
+}
+
+function addAttachment(value){
+	var attachments = [];
+	var attachment = {
+		color: '#CCC',
+		fields: [],
+		"mrkdwn_in": ["fields"],
+	};
+	attachment.fields.push({
+		value: "`" + value + "`",
+		short: true,
+	})
+	attachments.push(attachment);
+	return attachments;
 }
 
 
 controller.hears(['database name'],['direct_message','direct_mention','mention'],function(bot,message) {
-	var dbName = connection['config']['database'];  
-  var attachments = [];
-  var attachment = {
-   color: '#CCC',
-   fields: [],
-   "mrkdwn_in": ["fields"],
- };
- attachment.fields.push({
-  value: "`" + dbName + "`",
-  short: true,
-})
- attachments.push(attachment);
+	bot.reply(message,{attachments: addAttachment(connection['config']['database'])});
+});
 
- bot.reply(message,{
-  attachments: attachments,
-},function(err,resp) {
-  console.log("rtm error: " + err,resp);
-});
-});
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
-			console.log(err);
-			bot.reply(message, "There was an error getting the database tables");
+			bot.reply(message,{attachments: addAttachment("There was an error getting the database tables")});
 		}
 		else{
 			var tables = [];
@@ -158,34 +128,15 @@ controller.hears(['show tables'],['direct_message','direct_mention','mention'],f
 				var tableName = rows[i]["Tables_in_" + connection['config']['database']];
 				tables.push(tableName);
 			}
-
-			var attachments = [];
-      var attachment = {
-       color: '#CCC',
-       fields: [],
-       "mrkdwn_in": ["fields"],
-     };
-
-     attachment.fields.push({
-      value: "`" + tables.toString() + "`",
-      short: true,
-    })
-     attachments.push(attachment);
-     bot.reply(message,{
-      attachments: attachments,
-    },function(err,resp) {
-      console.log("rtm error: " + err,resp);
-    });
-   }
-
- });
+			bot.reply(message,{attachments: addAttachment(tables.toString())});
+		}
+	});
 });
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
-			console.log(err);
-			bot.reply(message, "There was an error getting the schema");
+			bot.reply(message,{attachments: addAttachment("There was an error getting the schema")});
 		}
 		else{
 			var tables = [];
@@ -199,7 +150,7 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 						if(tables.toString().indexOf(response.text) != -1){
 							connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
 								if(err || rows === undefined){
-									bot.reply(message, "There was an error getting the schema for table " + response.text);
+									bot.reply(message,{attachments: addAttachment("There was an error getting the schema for table " + response.text)});
 								}
 								else{
 									var columns = [];
@@ -207,26 +158,24 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 										var field = rows[i]["Field"];
 										columns.push(field);
 									}
-									var columnsOutput = columns.toString();
+									bot.reply(message,{attachments: addAttachment(columns.toString())});
 									convo.stop();
-									bot.reply(message, columnsOutput);
 									return;
 								}
 							});
 						}
 						else{
 							convo.stop();
-							bot.reply(message, "This is not a valid choice try again... (Type: <show schema>");
-               return;
-             }
-           });
+							bot.reply(message,{attachments: addAttachment("This is not a valid choice try again... (Type: <show schema>")});
+								return;
+							}
+						});
 				});
 			}
 			if(tables.length == 1){
 				connection.query('SHOW COLUMNS FROM ' + tables[0] +';', function(err, rows, fields) {
 					if(err || rows == undefined){
-						console.log(err);
-						bot.reply("There was an error getting the schema for table " + tables[0]);
+						bot.reply(message,{attachments: addAttachment("There was an error getting the schema for table " + tables[0])});
 					}
 					else{
 						var columns = [];
@@ -234,16 +183,14 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 							var field = rows[i]["Field"];
 							columns.push(field);
 						}
-						var columnsOutput = columns.toString();
-						bot.reply(message, columnsOutput);
+						bot.reply(message,{attachments: addAttachment(columns.toString())});
 						return;
 					}
-					
 				});
 
 			}
 			if(tables.length == 0){
-				bot.reply(message, "You have no tables stored!");
+				bot.reply(message,{attachments: addAttachment("You have no tables stored!")});
 				return;
 			}
 		}
@@ -251,36 +198,44 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 });
 
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
+		if(message.text.toUpperCase().indexOf("DROP") != -1){
+			//prevent SQL injection from slackchat user 
+			bot.reply(message,{attachments: addAttachment("You are not allowed to run this command in the chatroom...")});
+		}
+		else{
 	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
 		console.log("Query:", rows);
-    var data = [];
-    if (err || rows === undefined){
-     bot.reply(message, "error: invalid query");
-   }
-   else{
-     for(var i = 0; i < rows.length; i++){
-      var line = [];
-      var keys = Object.keys(rows[i]);
-      for(var ii = 0; ii < keys.length; ii++){
-       line.push(rows[i][keys[ii]]);
-     }
-     data.push(line);
-     bot.reply(message, line.toString());
-   }
- }
- bot.startConversation(message,function(err,convo) {
-  convo.ask('Would you like to save this data to a CSV?',function(response,convo) {
-    if(response.text.toUpperCase() == "YES"){
-      convo.next();
-      convo.ask("What would you like to name the file?", function(response, convo){
-        createExcelAttachment(data, response.text);
-        convo.stop();
-      });
-    }
-  });
-});
- return;
-});
+		var data = [];
+		if (err || rows === undefined){
+			bot.reply(message,{attachments: addAttachment("Error: invalid query")});
+		}
+		else{
+			var keys = Object.keys(rows[0]);
+			bot.reply(message, keys.toString());
+			for(var i = 0; i < rows.length; i++){
+				var line = [];
+				for(var ii = 0; ii < keys.length; ii++){
+					line.push(rows[i][keys[ii]]);
+				}
+				data.push(line);
+				bot.reply(message, line.toString());
+			}
+
+			bot.startConversation(message,function(err,convo) {
+				convo.ask('Would you like to save this data to a CSV?',function(response,convo) {
+					if(response.text.toUpperCase() == "YES"){
+						convo.next();
+						convo.ask("What would you like to name the file?", function(response, convo){
+							createExcelAttachment(data, response.text);
+						});
+						convo.stop();
+					}
+				});
+			});
+		}
+		return;
+	});
+	}
 });
 
 var analytics = require('./analytics')();
@@ -334,9 +289,7 @@ witbot.hears('performance', 0.5, function (bot, message, outcome) {
 	else{
 		var segment = outcome.entities.segment[0].value;
 	}
-	
 	//console.log(segment);
-
 	getAnalytics(bot, message, metric, segment, startDate, endDate, true);
 })
 
@@ -350,22 +303,15 @@ controller.on('channel_joined',function(bot,message) {
 	);
 });
 
-
-
-//ONLY WORKS WITH AMBIENT ON???
 controller.hears(['help'],['direct_message','direct_mention','mention'],function(bot,message) {
-
-  // start a conversation to handle this response.
-  bot.startConversation(message,function(err,convo) {
-  	convo.say("Ready to become an analytics guru? :nerd_face:  I can help!");
-  	convo.say("I'm here to answer all your questions around data, analytics, metrics and insights. Ask me a question like `How many new users signed up last week?` or `How many daily active users over the past week?` and I will answer. You can also start by just mentioning a specific `<metric>` and `<period>`, and we can segment it out from there. :simple_smile: ");
-  	convo.say("To see a full list of supported metrics, type `@guru: list metrics`");
-  })
-
+	bot.startConversation(message,function(err,convo) {
+		convo.say("Ready to become an analytics guru? :nerd_face:  I can help!");
+		convo.say("I'm here to answer all your questions around data, analytics, metrics and insights. Ask me a question like `How many new users signed up last week?` or `How many daily active users over the past week?` and I will answer. You can also start by just mentioning a specific `<metric>` and `<period>`, and we can segment it out from there. :simple_smile: ");
+		convo.say("To see a full list of supported metrics, type `@guru: list metrics`");
+	})
 });
 
 controller.hears(['list metrics'],['direct_message','direct_mention','mention'],function(bot,message) {
-
 	var attachments  = [
 	{
 		"title": "Users",
@@ -379,21 +325,13 @@ controller.hears(['list metrics'],['direct_message','direct_mention','mention'],
 	}
 	]
 
-
-
-	  //attachments.push(attachment);
-
-	  bot.reply(message,{
-	  	text: "Here are all the metrics I know how to calculate. Pair one of these with a `<period>` of time, and I'll get to crunching them numbers!",
-	  	attachments: attachments,
-	  },function(err,resp) {
+	bot.reply(message,{
+		text: "Here are all the metrics I know how to calculate. Pair one of these with a `<period>` of time, and I'll get to crunching them numbers!",
+		attachments: attachments,
+	},function(err,resp) {
 		//console.log(err,resp);
 	});
-
-	});
-
-
-
+});
 
 function unCamelCase (str){
 	return str
@@ -517,14 +455,10 @@ function unCamelCase (str){
 			},function(err,resp) {
 				console.log("rtm error: " + err,resp);
 			});
-
 			//DETERMINE SEGMENTING OF ABOVE METRIC REPORT//
-			
-
 			console.log('no errors..')
 		})  
 }
-
 }
 
 function followUp(bot, message, title, startDate, endDate, metric, prettyStartDate, prettyEndDate){
@@ -536,10 +470,8 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 			pattern: bot.utterances.yes,
 			callback: function(response,convo) {
 				askSegment(metric);
-				
 				//do something else...( store response / make call)
 				convo.next();
-
 			}
 		},
 		{
