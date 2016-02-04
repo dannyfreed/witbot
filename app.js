@@ -50,7 +50,10 @@ app.get('/oauth2callback', function(req, res) {
   var code = req.query.code;
   gapi.client.getToken(code, function(err, tokens){
     gapi.client.credentials = tokens;
-    console.log(gapi.client.credentials)
+    listAccountSummaries();
+    // console.log('tokens!!' + JSON.stringify(tokens));
+    // console.log(gapi.client.credentials);
+    // console.log(gapi.client.credentials.access_token);
   });
 
   var locals = {
@@ -61,11 +64,43 @@ app.get('/oauth2callback', function(req, res) {
 });
 
 //TODO: PULL DATA LIKE THIS FROM GOOGLE ANALYTICS API...THIS IS GOOGLE PLUS AND GOOGLE CAL CODE...
-var getData = function() {
+function getData() {
   gapi.analytics.management.accounts.list().withAuthClient(gapi.client).execute(function(err, results){
     console.log(results);
   });
 };
+
+function listAccountSummaries() {
+  var request = gapi.client.analytics.management.accountSummaries.list();
+  console.log(request);
+
+  //request.execute(handleResponse);
+}
+function handleResponse(response) {
+  if (response && !response.error) {
+    if (response.items) {
+      printAccountSummaries(response.items);
+    }
+  } else {
+    console.log('There was an error: ' + response.message);
+  }
+}
+
+
+function printAccountSummaries(accounts) {
+  for (var i = 0, account; account = accounts[i]; i++) {
+    console.log('Account id: ' + account.id);
+    console.log('Account name: ' + account.name);
+    console.log('Account kind: ' + account.kind);
+
+    // Print the properties.
+    if (account.webProperties) {
+      printProperties(account.webProperties);
+    }
+  }
+}
+
+
 
 exports.access_token = gapi.client.credentials;
 

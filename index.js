@@ -1,7 +1,7 @@
 var Botkit = require('botkit')
 var Witbot = require('witbot')
 var moment = require('moment');
-var excelbuilder = require('msexcel-builder');
+// var excelbuilder = require('msexcel-builder');
 var mysql = require('mysql');
 var Botkit = require('botkit');
 
@@ -119,6 +119,10 @@ controller.hears(['database name'],['direct_message','direct_mention','mention']
 
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
+	showTables(bot,message);
+});
+
+function showTables(bot, message){
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
 			bot.reply(message,{attachments: addAttachment("There was an error getting the database tables")});
@@ -127,12 +131,14 @@ controller.hears(['show tables'],['direct_message','direct_mention','mention'],f
 			var tables = [];
 			for(var i = 0; i < rows.length; i++){
 				var tableName = rows[i]["Tables_in_" + connection['config']['database']];
+				var tableName = '`' + tableName + '`';
 				tables.push(tableName);
 			}
-			bot.reply(message,{attachments: addAttachment(tables.toString())});
+
+			bot.reply(message,tables.toString());
 		}
 	});
-});
+}
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	connection.query('show tables', function(err, rows, fields) {
