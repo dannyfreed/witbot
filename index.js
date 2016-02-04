@@ -141,6 +141,10 @@ function showTables(bot, message){
 }
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
+	showSchema(bot,message);
+});
+
+function showSchema(bot, message){
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
 			bot.reply(message,{attachments: addAttachment("There was an error getting the schema")});
@@ -202,8 +206,7 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 			}
 		}
 	});
-});
-
+}
 
 
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
