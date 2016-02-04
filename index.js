@@ -105,8 +105,6 @@ function showTables(callback){
 	});
 }
 
-
-
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	showSchema(bot,message);
 });
@@ -177,8 +175,8 @@ function showSchema(bot, message){
 }
 
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
-		bot.reply(message, "What do you have a question about?");
-		bot.startConversation(message, askTable);
+	bot.reply(message, "What do you have a question about?");
+	bot.startConversation(message, askTable);
 
 });
 
@@ -197,25 +195,31 @@ askTable = function(response, convo){
 }
 
 askField = function(response, convo){
-		console.log(response.text);
-	//IMPLEMENT SCHEMA SELECTION NEED TO FIX CALLBACKS
-
-	/*
-	showSchema(function(err, data){
-		if(err){
-			console.log(err)
+	convo.say("Would you like to apply any filters to narrow your search?");
+	connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
+		if(err || rows === undefined){
+			bot.reply(message,{attachments: addAttachment("There was an error getting the schema for table " + response.text)});
 		}
 		else{
-			convo.say("Would you like to apply any filters to narrow your search?");
-			convo.next();
-			convo.ask(data, function(response,convo){
-				askField(response.text, convo);
+			var columns = [];
+			for(var i = 0; i < rows.length; i++){
+				var field = "`" + rows[i]["Field"] + "` ";
+				columns.push(field);
+			}
+			convo.ask(columns.toString(), function(response, convo){
+				nextPrompt(response, convo);
 				convo.next();
 			});
 		}
 	});
-*/
 }
+
+
+nextPrompt = function(response, convo){
+	console.log(response.text);
+}
+
+
 
 
 
