@@ -22,6 +22,8 @@
     "googleanalytics": "^0.3.7",
     "googleapis": "^2.1.7",
     "moment": "2.11.1",
+    "msexcel-builder": "0.0.2",
+    "mysql": "^2.10.2",
     "node-wit": "^2.0.0",
     "q": "^1.4.1",
     "quiche": "0.0.10",

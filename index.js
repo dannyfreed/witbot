@@ -198,6 +198,8 @@ controller.hears(['show schema'],['direct_message','direct_mention','mention'],f
 	});
 });
 
+
+
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
 		if(message.text.toUpperCase().indexOf("DROP") != -1){
 			//prevent SQL injection from slackchat user 
