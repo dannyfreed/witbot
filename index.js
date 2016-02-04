@@ -177,8 +177,9 @@ function showSchema(bot, message){
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
 	bot.reply(message, "What do you have a question about?");
 	bot.startConversation(message, askTable);
-
 });
+
+var choices = [];
 
 askTable = function(response, convo){
 	showTables(function(err, data){
@@ -187,6 +188,7 @@ askTable = function(response, convo){
 		}
 		else{
 			convo.ask(data, function(response,convo){
+				choices.push(response.text);
 				askField(response, convo);
 				convo.next();
 			});
@@ -198,7 +200,7 @@ askField = function(response, convo){
 	convo.say("Would you like to apply any filters to narrow your search?");
 	connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
 		if(err || rows === undefined){
-			bot.reply(message,{attachments: addAttachment("There was an error getting the schema for table " + response.text)});
+			convo.say({attachments: addAttachment("There was an error getting the schema for table " + response.text)});
 		}
 		else{
 			var columns = [];
@@ -207,18 +209,29 @@ askField = function(response, convo){
 				columns.push(field);
 			}
 			convo.ask(columns.toString(), function(response, convo){
-				nextPrompt(response, convo);
+				choices.push(response.text);
+				askCalculate(response, convo);
 				convo.next();
 			});
 		}
 	});
 }
 
+//MAYBE one more field before? need to figure out how to get the attributes of a specific column. 
+//Person may not have number fields, etc.. 
 
-nextPrompt = function(response, convo){
-	console.log(response.text);
+askCalculate = function(response, convo){
+	convo.ask("What would you like to calculate? \n `Raw Data` `Count` `Sum` `Average` `Number of Distinct Values` `Cummulative Sum` `Standard Deviation`", function(response, convo){
+				makeQuery(response, convo);
+				convo.next();
+			});
 }
 
+makeQuery = function(response, convo){
+	choices.push(response.text);
+	console.log(choices);
+	convo.stop();
+}
 
 
 
