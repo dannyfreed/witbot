@@ -30,48 +30,6 @@ controller.spawn({
 	console.log('Connected to slack')
 })
 
-//WIT.AI 
-
-// var request = require('request');
-// var wit = require('node-wit');
-// var fs = require('fs');
-// var witbot = Witbot(witToken);
-// var ACCESS_TOKEN = "MSL3H5OLCFAD5ZB6CBUMWLFAQ6WOOZBX"; 
-
-/*
-wit.captureTextIntent(ACCESS_TOKEN, "What is the cheapest price?", function (err, res) {
-    if (err) console.log("Error: ", err);
-    console.log("Length outcomes: ", res['outcomes'].length);
-    var intent = res['outcomes'][0]['intent']; 
-
-    console.log(JSON.stringify(res, null, " "));
-});
-
-
-function createIntent() { 
-	var payload = {"name":"flight_request",
-	"doc":"detect flight request",
-	"expressions":[{
-		"body" : "fly from incheon to sfo"
-	}, {
-		"body" : "I want to fly from london to sfo"
-	},{
-		"body" : "need a flight from paris to tokyo"
-	}]};
-
-	request.post({
-		headers: {'content-type' : 'application/json', 'Authorization' : 'Bearer ' + ACCESS_TOKEN},
-		url:     'https://api.wit.ai/intents',
-		body:    payload,
-		json: true
-	}, function(error, response, body){
-		console.log(body)
-	});
-
-}
-createIntent()
-*/
-
 //TODO: ADD ONBOARDING BOT :)
 
 function createExcelAttachment(data, nameWorkbook){
@@ -119,13 +77,21 @@ controller.hears(['database name'],['direct_message','direct_mention','mention']
 
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
-	showTables(bot,message);
+	showTables(function(err, data){
+		if(err){
+			console.log(err)
+		}
+		else{
+			bot.reply(message, data);
+		}
+	});
+
 });
 
-function showTables(bot, message){
-	connection.query('show tables', function(err, rows, fields) {
+function showTables(callback){
+	connection.query('show tables', function (err, rows, fields) {
 		if(err || rows === undefined){
-			bot.reply(message,{attachments: addAttachment("There was an error getting the database tables")});
+			callback(err, null)
 		}
 		else{
 			var tables = [];
@@ -134,17 +100,19 @@ function showTables(bot, message){
 				var tableName = '`' + tableName + '`';
 				tables.push(tableName);
 			}
-
-			bot.reply(message,tables.toString());
+			callback(null, tables.toString());
 		}
 	});
 }
+
+
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	showSchema(bot,message);
 });
 
 function showSchema(bot, message){
+	//TO DO ADD CALLBACKS TO JUST GET SCHEMA
 	connection.query('show tables', function(err, rows, fields) {
 		if(err || rows === undefined){
 			bot.reply(message,{attachments: addAttachment("There was an error getting the schema")});
@@ -208,7 +176,54 @@ function showSchema(bot, message){
 	});
 }
 
+controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
+		bot.reply(message, "What do you have a question about?");
+		bot.startConversation(message, askTable);
 
+});
+
+askTable = function(response, convo){
+	showTables(function(err, data){
+		if(err){
+			console.log(err)
+		}
+		else{
+			convo.ask(data, function(response,convo){
+				askField(response, convo);
+				convo.next();
+			});
+		}
+	});
+}
+
+askField = function(response, convo){
+		console.log(response.text);
+	//IMPLEMENT SCHEMA SELECTION NEED TO FIX CALLBACKS
+
+	/*
+	showSchema(function(err, data){
+		if(err){
+			console.log(err)
+		}
+		else{
+			convo.say("Would you like to apply any filters to narrow your search?");
+			convo.next();
+			convo.ask(data, function(response,convo){
+				askField(response.text, convo);
+				convo.next();
+			});
+		}
+	});
+*/
+}
+
+
+
+
+
+
+
+/*
 controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
 		if(message.text.toUpperCase().indexOf("DROP") != -1){
 			//prevent SQL injection from slackchat user 
@@ -263,7 +278,7 @@ controller.hears(['query'],['direct_message','direct_mention','mention'],functio
 	}
 });
 
-
+*/
 
 
 var analytics = require('./analytics')();
