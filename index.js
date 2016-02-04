@@ -210,26 +210,48 @@ askField = function(response, convo){
 			}
 			convo.ask(columns.toString(), function(response, convo){
 				choices.push(response.text);
-				askCalculate(response, convo);
+				filterBy(response, convo);
 				convo.next();
 			});
 		}
 	});
 }
 
-//MAYBE one more field before? need to figure out how to get the attributes of a specific column. 
-//Person may not have number fields, etc.. 
+function getTypeCol(callback){
+	var sql = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + choices[0] + "' AND COLUMN_NAME = '" + choices[1] + "'";
+	connection.query(sql, function(err, rows, fields) {
+		if(err || rows === undefined){
+			callback(err, null);
+		}
+		else{
+			callback(null, rows[0]['DATA_TYPE']);
+		}
+	});
+}
 
-askCalculate = function(response, convo){
-	convo.ask("What would you like to calculate? \n `Raw Data` `Count` `Sum` `Average` `Number of Distinct Values` `Cummulative Sum` `Standard Deviation`", function(response, convo){
+filterBy = function(response, convo){
+		var options = {
+			"varchar" : "`Is`, `Is Not`, `Is Empty`, `Not Empty`",
+			"float" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`",
+			"tinyint" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`"
+			};
+
+	getTypeCol(function(err, data){
+		if(err){
+			console.log("error", err)
+		}
+		else{
+				convo.ask("What would you like to filter by? \n" + options[data], function(response, convo){
 				makeQuery(response, convo);
 				convo.next();
 			});
+		}
+	});
 }
 
 makeQuery = function(response, convo){
 	choices.push(response.text);
-	console.log(choices);
+	console.log("query", choices);
 	convo.stop();
 }
 
