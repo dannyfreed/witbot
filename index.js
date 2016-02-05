@@ -218,12 +218,14 @@ askField = function(response, convo){
 }
 
 function getTypeCol(callback){
+	var rows = null;
 	var sql = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + choices[0] + "' AND COLUMN_NAME = '" + choices[1] + "'";
 	connection.query(sql, function(err, rows, fields) {
 		if(err || rows === undefined){
 			callback(err, null);
 		}
 		else{
+			console.log(rows); // bugged only will run through once
 			callback(null, rows[0]['DATA_TYPE']);
 		}
 	});
@@ -231,9 +233,12 @@ function getTypeCol(callback){
 
 filterBy = function(response, convo){
 		var options = {
-			"varchar" : "`Is`, `Is Not`, `Is Empty`, `Not Empty`",
-			"float" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`",
-			"tinyint" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`"
+			"varchar" : "`Is`, `Is Not`, `Is Empty`, `Not Empty`, `None`",
+			"float" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`, `None`",
+			"tinyint" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`, `None`",
+			"int" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`, `None`",
+			"date" : "`Today`, `Yesterday`, `Past 7 Days`, `Past 30 Days`, `Last Week`, `Last Month`, `Last Year`, `This Week`, `This Month`, `This Year`, `None`",
+			"time" : "`TO DO.....:tophat:`"
 			};
 
 	getTypeCol(function(err, data){
@@ -242,83 +247,48 @@ filterBy = function(response, convo){
 		}
 		else{
 				convo.ask("What would you like to filter by? \n" + options[data], function(response, convo){
-				makeQuery(response, convo);
+				console.log(data);
+				choices.push(response.text);
 				convo.next();
+				viewBy(response, convo);
 			});
 		}
 	});
 }
 
-makeQuery = function(response, convo){
-	choices.push(response.text);
-	console.log("query", choices);
-	convo.stop();
+viewBy = function(response, convo){
+	convo.ask("What would you like to view by? \n `Raw Data`, `Count`, `Average`, `Sum`", function(response, convo){
+			choices.push(response.text);
+			convo.next();
+			makeSQL();
+		});
 }
 
+makeSQL = function(response, convo){
+	console.log("query", choices);
+	//SOME CRAZY SWITCH TREE HERE
 
-
-
-
-
-
-
-/*
-controller.hears(['query'],['direct_message','direct_mention','mention'],function(bot,message) {
-		if(message.text.toUpperCase().indexOf("DROP") != -1){
-			//prevent SQL injection from slackchat user 
-			bot.reply(message,{attachments: addAttachment("You are not allowed to run this command in the chatroom...")});
-		}
-		else{
-	connection.query(message['text'].replace("query", ""), function(err, rows, fields) {
-		console.log("Query:", rows);
-		var data = [];
-		if (err || rows === undefined){
-			bot.reply(message,{attachments: addAttachment("Error: invalid query")});
-		}
-		else{
-			var keys = Object.keys(rows[0]);
-			bot.reply(message, keys.toString());
-			for(var i = 0; i < rows.length; i++){
-				var line = [];
-				for(var ii = 0; ii < keys.length; ii++){
-					line.push(rows[i][keys[ii]]);
-				}
-				data.push(line);
-				bot.reply(message, line.toString());
-			}
-
-
-  bot.startConversation(message,function(err,convo) {
-    convo.ask('What would you like to save this query to a CSV?',[
-      {
-        pattern: bot.utterances.yes,
-        callback: function(response,convo) {
-        	convo.next();
-        	convo.ask("What would you like the name the file?", function(response, convo){
-        		console.log(response.text);
-        		createExcelAttachment(data, response.text);
-        		//TO DO SEND BACK A MESSAGE WITH THE DATA FILE AS ATTACHMENT 
-        		convo.stop();
-        	})
-        }
-      },
-      {
-        pattern: bot.utterances.no,
-        callback: function(response,convo) {
-          convo.say('Perhaps later.');
-          convo.stop();
-        }
-      }
-    ]);
-  })
-		}
-		return;
-	});
+	if(choices[2] == "None"){
+			var sql = "SELECT " + choices[1]  + " FROM " + choices[0]; 
 	}
-});
-
-*/
-
+	else{
+		var sql = "SELECT " + choices[1]  + " FROM " + choices[0] + "WHERE" + choices[1] + " " + choices[2] + " STRINGGGGG"; 
+	}
+	console.log(sql);
+	connection.query(sql, function(err, rows, fields) {
+		if(err || rows === undefined){
+			console.log(err)
+		}
+		else{
+			console.log(rows);
+			for(i=0; i<rows.length; i++){
+				//BUG HERE CANT PASS CONVO INTO IT?
+				convo.say("`" + rows[i] + "`");
+			}
+		}
+	});
+	//convo.stop();
+}
 
 var analytics = require('./analytics')();
 
