@@ -77,33 +77,17 @@ controller.hears(['database name'],['direct_message','direct_mention','mention']
 
 
 controller.hears(['show tables'],['direct_message','direct_mention','mention'],function(bot,message) {
-	showTables(function(err, data){
-		if(err){
-			console.log(err)
+	connection.query({
+		sql : "show tables",
+		timeout : 40000
+	}, function(error, results, fields){
+		var tables = [];
+		for(i=0; i<results.length; i++){
+			tables.push("`" + results[i]['Tables_in_' + process.env.DATABASE] + "` ");
 		}
-		else{
-			bot.reply(message, data);
-		}
+		bot.reply(message, tables.toString());
 	});
-
 });
-
-function showTables(callback){
-	connection.query('show tables', function (err, rows, fields) {
-		if(err || rows === undefined){
-			callback(err, null)
-		}
-		else{
-			var tables = [];
-			for(var i = 0; i < rows.length; i++){
-				var tableName = rows[i]["Tables_in_" + connection['config']['database']];
-				var tableName = '`' + tableName + '`';
-				tables.push(tableName);
-			}
-			callback(null, tables.toString());
-		}
-	});
-}
 
 controller.hears(['show schema'],['direct_message','direct_mention','mention'],function(bot,message) {
 	showSchema(bot,message);
@@ -179,28 +163,32 @@ controller.hears(['query'],['direct_message','direct_mention','mention'],functio
 	bot.startConversation(message, askTable);
 });
 
+
 var choices = [];
 
 askTable = function(response, convo){
-	showTables(function(err, data){
-		if(err){
-			console.log(err)
+	connection.query({
+		sql : "show tables",
+		timeout : 40000
+	}, function(error, results, fields){
+		var tables = [];
+		for(i=0; i<results.length; i++){
+			tables.push("`" + results[i]['Tables_in_' + process.env.DATABASE] + "` ");
 		}
-		else{
-			convo.ask(data, function(response,convo){
-				choices.push(response.text);
-				askField(response, convo);
-				convo.next();
-			});
-		}
+		convo.ask(tables.toString(), function(response,convo){
+			choices.push(response.text);
+			askField(response, convo);
+			convo.next();
+		});
 	});
 }
 
 askField = function(response, convo){
-	convo.say("Would you like to apply any filters to narrow your search?");
+	var selectedTable = response.text;
+	convo.say("Ok. I've got your list of *" + selectedTable + "* right here. Would you like to apply any filters to narrow your search?");
 	connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
 		if(err || rows === undefined){
-			convo.say({attachments: addAttachment("There was an error getting the schema for table " + response.text)});
+			convo.say("There was an error getting the schema for table `" + response.text + "`");
 		}
 		else{
 			var columns = [];
@@ -217,21 +205,13 @@ askField = function(response, convo){
 	});
 }
 
-function getTypeCol(callback){
-	var rows = null;
-	var sql = "SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + choices[0] + "' AND COLUMN_NAME = '" + choices[1] + "'";
-	connection.query(sql, function(err, rows, fields) {
-		if(err || rows === undefined){
-			callback(err, null);
-		}
-		else{
-			console.log(rows); // bugged only will run through once
-			callback(null, rows[0]['DATA_TYPE']);
-		}
-	});
-}
 
 filterBy = function(response, convo){
+	var query = connection.query("SELECT DATA_TYPE FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = '" + choices[0] + "' AND COLUMN_NAME = '" + choices[1] + "'");
+	query.on('error', function(err) {
+		throw err;
+	});
+	query.on('result', function(row) {
 		var options = {
 			"varchar" : "`Is`, `Is Not`, `Is Empty`, `Not Empty`, `None`",
 			"float" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`, `None`",
@@ -239,55 +219,48 @@ filterBy = function(response, convo){
 			"int" : "`Equal`, `Not Equal`, `Greater Than`, `Less Than`, `Is Empty`, `Not Empty`, `None`",
 			"date" : "`Today`, `Yesterday`, `Past 7 Days`, `Past 30 Days`, `Last Week`, `Last Month`, `Last Year`, `This Week`, `This Month`, `This Year`, `None`",
 			"time" : "`TO DO.....:tophat:`"
-			};
-
-	getTypeCol(function(err, data){
-		if(err){
-			console.log("error", err)
-		}
-		else{
-				convo.ask("What would you like to filter by? \n" + options[data], function(response, convo){
-				console.log(data);
-				choices.push(response.text);
-				convo.next();
-				viewBy(response, convo);
-			});
-		}
+		};
+		convo.ask("What would you like to filter by? \n" + options[row['DATA_TYPE']], function(response, convo){
+			choices.push(response.text);
+			viewBy(response, convo);
+			convo.next();
+		});
 	});
+	
+
 }
+
 
 viewBy = function(response, convo){
 	convo.ask("What would you like to view by? \n `Raw Data`, `Count`, `Average`, `Sum`", function(response, convo){
-			choices.push(response.text);
-			convo.next();
-			makeSQL();
-		});
+		choices.push(response.text);
+		makeSQL();
+		convo.next();
+	});
+
 }
 
 makeSQL = function(response, convo){
 	console.log("query", choices);
-	//SOME CRAZY SWITCH TREE HERE
-
 	if(choices[2] == "None"){
-			var sql = "SELECT " + choices[1]  + " FROM " + choices[0]; 
+		var query = "SELECT " + choices[1]  + " FROM " + choices[0]; 
 	}
 	else{
-		var sql = "SELECT " + choices[1]  + " FROM " + choices[0] + "WHERE" + choices[1] + " " + choices[2] + " STRINGGGGG"; 
+		var query = "SELECT " + choices[1]  + " FROM " + choices[0] + "WHERE" + choices[1] + " " + choices[2] + " STRINGGGGG"; 
 	}
-	console.log(sql);
-	connection.query(sql, function(err, rows, fields) {
-		if(err || rows === undefined){
-			console.log(err)
+
+	connection.query({
+		sql : query,
+		timeout : 4000000
+	}, function(error, results, fields){
+		for(i=0; i< results.length; i++){
+			var keys = Object.keys(results[i]);
+			for(j=0; j<keys.length; j++){
+			//CONVO undefined???
+			console.log(results[i][keys[j]]);
 		}
-		else{
-			console.log(rows);
-			for(i=0; i<rows.length; i++){
-				//BUG HERE CANT PASS CONVO INTO IT?
-				convo.say("`" + rows[i] + "`");
-			}
-		}
-	});
-	//convo.stop();
+	}
+});
 }
 
 var analytics = require('./analytics')();
@@ -601,6 +574,3 @@ function followUp(bot, message, title, startDate, endDate, metric, prettyStartDa
 })
 }
 }
-
-
-
