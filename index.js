@@ -197,10 +197,11 @@ askTable = function(response, convo){
 }
 
 askField = function(response, convo){
-	convo.say("Would you like to apply any filters to narrow your search?");
+	var selectedTable = response.text;
+	convo.say("Ok. I've got your list of *" + selectedTable + "* right here. Would you like to apply any filters to narrow your search?");
 	connection.query('SHOW COLUMNS FROM ' + response.text +';', function(err, rows, fields) {
 		if(err || rows === undefined){
-			convo.say({attachments: addAttachment("There was an error getting the schema for table " + response.text)});
+			convo.say("There was an error getting the schema for table `" + response.text + "`");
 		}
 		else{
 			var columns = [];
